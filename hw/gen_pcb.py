@@ -45,13 +45,15 @@ PLACE = {
     "J1": (30.0, 70.0, 0), "F1": (23.0, 67.5, 90), "F2": (42.0, 67.5, 90),
     "RV1": (28.5, 56.0, 0), "PS1": (30.0, 49.0, 90),
     "T1": (10.5, 54.0, 180),
-    "R1": (26.6, 63.0, 270), "R2": (29.1, 63.0, 90), "R3": (31.6, 63.0, 270), "R4": (34.1, 63.0, 90),
-    "R5": (37.7, 61.54, 0),
+    # divider zigzag at 3.3 mm pitch between the fuses: pads of nodes two resistors apart (~120 V) keep
+    # 1.5 mm; R4's N end sits right under RV1's N pad
+    "R1": (26.65, 63.0, 270), "R2": (29.95, 63.0, 90), "R3": (33.25, 63.0, 270), "R4": (36.55, 63.0, 90),
     "K1": (53.9, 57.5, 90), "J2": (53.9 - 2.54, 70.0, 0),
     "K2": (72.48, 57.5, 90), "J3": (72.48 - 2.54, 70.0, 0),
     # ---- CT input and metering -----------------------------------------------------------------
     "J4": (3.2, 73.95, 0),
-    "FB1": (3.2, 70.6, 90), "FB2": (7.01, 70.6, 90), "FB3": (10.82, 70.6, 90), "FB4": (14.63, 70.6, 90),
+    # beads beside their burden columns, after the burden node (the CT loop is terminal -> burden only)
+    "FB1": (1.2, 70.6, 90), "FB2": (5.01, 70.6, 90), "FB3": (8.82, 70.6, 90), "FB4": (12.63, 70.6, 90),
     "R8": (3.2, 66.6, 90), "R9": (7.01, 66.6, 90), "R10": (10.82, 66.6, 90), "R11": (14.63, 66.6, 90),
     "U2": (14.0, 33.0, 0),
     # RC filters: one row per input, R (CT side left) then C to GND, rows 3.2 apart
@@ -119,11 +121,22 @@ def to_features(x, y):
 _io = pcbnew.PCB_IO_KICAD_SEXPR()
 
 
+# stock footprints whose KiCad 3D model isn't installed with every KiCad: use the project's own body
+# (hw/gen_3d.py) so the renders, the board STEP and the case fit test all see the part
+LOCAL_MODELS = {"ESP32-C6-MINI-1": "ESP32-C6-MINI-1", "SW_Push_1P1T_XKB_TS-1187A": "TS-1187A",
+                "USB_C_Receptacle_HRO_TYPE-C-31-M-12": "USB-C-HRO-TYPE-C-31-M-12"}
+
+
 def load_fp(fpid: str) -> pcbnew.FOOTPRINT:
     lib, name = fpid.split(":")
     path = HERE / "lib" / "c6er.pretty" if lib == "c6er" else KICAD_FP / f"{lib}.pretty"
     fp = _io.FootprintLoad(str(path), name)
     fp.SetFPID(pcbnew.LIB_ID(lib, name))
+    if name in LOCAL_MODELS:
+        fp.Models().clear()
+        m = pcbnew.FP_3DMODEL()
+        m.m_Filename = "${KIPRJMOD}/lib/c6er.3dshapes/" + LOCAL_MODELS[name] + ".step"
+        fp.Models().append(m)
     return fp
 
 
@@ -232,7 +245,10 @@ def write_dru():
         ("L to N", pair(["MAINS_L"], ["MAINS_N"]), "4mm", "4mm"),
         ("L to N inside rated parts (5.08 mm terminal, HLK-PM01 pins)",
          f"{pair(['MAINS_L'], ['MAINS_N'])} && {rated}", "2mm", "2mm"),
+        # divider rules: clearance only. The board is flat around the divider (no slots), so creepage
+        # equals clearance there, and KiCad's creepage check gives random false hits on these pairs
         ("divider to L or N", pair(["MAINS_DIV"], ["MAINS_L", "MAINS_N"]), "1.5mm", None),
+        ("divider nodes (two resistors apart see ~120 V)", pair(["MAINS_DIV"], ["MAINS_DIV"]), "1.5mm", None),
         ("input to relays", pair(["MAINS_L", "MAINS_N", "MAINS_DIV"], ["RELAY1", "RELAY2"]), "4mm", "4mm"),
         ("relay 1 to relay 2", pair(["RELAY1"], ["RELAY2"]), "4mm", "4mm"),
     ]

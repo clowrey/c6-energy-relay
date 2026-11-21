@@ -75,3 +75,35 @@ def test_energy_uses_power_calibration():
         assert block and f"multiply: ${{{cal}}}" in block.group(1), sensor
     block = re.search(r"^\s*energy_total:\n((?:\s{6,}.*\n)+)", text, re.M)
     assert block and "multiply" in block.group(1)
+
+
+def _sub(key):
+    m = re.search(rf'^\s*{key}:\s*"([\d.]+)"', YAML.read_text(), re.M)
+    assert m, key
+    return float(m.group(1))
+
+
+def test_starting_calibration_matches_hardware():
+    """ESPHome's bl0939 scales for a 1 mOhm shunt and a 0.51k / (5 x 390k + 0.51k) divider. The
+    starting factors convert that to this board's CTs and ZMPT107 front end, within 2 %."""
+    from hw import parts
+    vals = {k: p.value for k, p in parts.PARTS.items()}
+    ohms = lambda v: float(v.split()[0].replace("R", ".").rstrip(".").replace("k", "e3"))
+    from hw import design
+    divider = [c for c in design.COMPONENTS if c.block == "vsense" and c.ref in ("R1", "R2", "R3", "R4", "R5")]
+    r_divider = sum(ohms(vals[c.part]) for c in divider)
+    ct_ratio = 100 / 0.050                              # SCT-013-000: 100 A : 50 mA
+    mv_per_a = 1000 * 2 * ohms(vals["r0r3"]) / ct_ratio  # burden: two 0.3 ohm in series
+    v_per_v = ohms(vals[design.comp("R6").part]) / r_divider   # ZMPT107 is 2 mA : 2 mA
+    esphome_v_per_v = 0.51 / (5 * 390 + 0.51)
+    want = {"current1_cal": 1.0 / mv_per_a, "current2_cal": 1.0 / mv_per_a,
+            "voltage_cal": esphome_v_per_v / v_per_v}
+    want["power1_cal"] = want["power2_cal"] = want["current1_cal"] * want["voltage_cal"]
+    for k, v in want.items():
+        assert abs(_sub(k) / v - 1) < 0.02, (k, _sub(k), round(v, 3))
+
+
+def test_relays_start_off():
+    """A relay never switches its load back on by itself after a reboot or power cut."""
+    modes = re.findall(r"^\s*restore_mode:\s*(\S+)", YAML.read_text(), re.M)
+    assert modes == ["ALWAYS_OFF", "ALWAYS_OFF"]

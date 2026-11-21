@@ -19,6 +19,10 @@
   (condition "(((A.NetClass == 'MAINS_DIV') && (B.NetClass == 'MAINS_L' || B.NetClass == 'MAINS_N')) || ((A.NetClass == 'MAINS_L' || A.NetClass == 'MAINS_N') && (B.NetClass == 'MAINS_DIV')))")
   (constraint clearance (min 1.5mm))
 )
+(rule "divider nodes (two resistors apart see ~120 V)"
+  (condition "(((A.NetClass == 'MAINS_DIV') && (B.NetClass == 'MAINS_DIV')) || ((A.NetClass == 'MAINS_DIV') && (B.NetClass == 'MAINS_DIV')))")
+  (constraint clearance (min 1.5mm))
+)
 (rule "input to relays"
   (condition "(((A.NetClass == 'MAINS_L' || A.NetClass == 'MAINS_N' || A.NetClass == 'MAINS_DIV') && (B.NetClass == 'RELAY1' || B.NetClass == 'RELAY2')) || ((A.NetClass == 'RELAY1' || A.NetClass == 'RELAY2') && (B.NetClass == 'MAINS_L' || B.NetClass == 'MAINS_N' || B.NetClass == 'MAINS_DIV')))")
   (constraint clearance (min 4mm))

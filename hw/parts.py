@@ -69,11 +69,13 @@ _LIST = [
     Part("ferrite", "C1002", "Device:FerriteBead_Small", "Inductor_SMD:L_0603_1608Metric", "600R@100MHz",
          per_board=4, mpn="GZ1608D601TF"),
     # --- resistors ----------------------------------------------------------------------------
-    Part("r1k", "C21190", "Device:R", _R0603, "1k", per_board=8),
+    Part("r1k", "C21190", "Device:R", _R0603, "1k", per_board=6),
+    Part("r470", "C23179", "Device:R", _R0603, "470R", per_board=2),
     Part("r10k", "C25804", "Device:R", _R0603, "10k", per_board=6),
     Part("r5k1", "C23186", "Device:R", _R0603, "5.1k", per_board=2),
     Part("r22", "C23345", "Device:R", _R0603, "22R 1%", per_board=1),
-    Part("r22k", "C25830", "Device:R", "Resistor_SMD:R_1206_3216Metric", "22k 1206", per_board=5),
+    Part("r27k", "C137340", "Device:R", "Resistor_SMD:R_1206_3216Metric", "27k 1206", per_board=4,
+         mpn="RC1206FR-0727KL"),  # 200 V each; 4 x 27k = 108k feeds the ZMPT107 2.2 mA at 240 V
     Part("r0r3", "C59882", "Device:R", "Resistor_SMD:R_1206_3216Metric", "0.3R 1%", per_board=4),
     # --- capacitors ---------------------------------------------------------------------------
     Part("c33n", "C21117", "Device:C", _C0603, "33nF", per_board=5),

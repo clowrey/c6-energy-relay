@@ -19,7 +19,7 @@ contactor coils). It is designed for JLCPCB to build fully assembled. It sits on
 |---|---|
 | MCU | ESP32-C6-MINI-1-N4: Wi-Fi 6, BLE, 802.15.4 (Thread/Zigbee capable), PCB antenna |
 | Metering | BL0939 on UART: voltage, 2 × current, 2 × active power, 2 × energy |
-| Voltage sense | ZMPT107-1 current-type transformer, fed through 5 × 22 kΩ from the line |
+| Voltage sense | ZMPT107-1 current-type transformer, fed through 4 × 27 kΩ from the line |
 | Current sense | 2 CT clamps with bare leads (100 A : 50 mA type, e.g. SCT-013-000), 0.6 Ω burden each |
 | Relays | 2 × Hongfa HF32FV-16 (16 A SPST-NO), dry contacts, for loads up to 10 A |
 | Supply | 100–240 V AC: 120 V line–neutral or 240 V leg–leg, chosen at install. HLK-PM01 isolated 5 V, or USB-C on the bench |
@@ -46,16 +46,17 @@ board the two sides are kept 6.5 mm apart.
   HLK-PM01 makes an isolated 5 V, 600 mA. On the bench, USB-C powers the board through an SS14 diode
   instead. An AP2112K LDO makes 3.3 V for the ESP32 and the BL0939; its low dropout keeps it
   regulating from USB minus the diode.
-- **Voltage:** five 22 kΩ resistors in series feed about 2 mA from the line into the ZMPT107-1, a
+- **Voltage:** four 27 kΩ resistors in series feed about 2 mA from the line into the ZMPT107-1, a
   2 mA : 2 mA current transformer. Its secondary drives a 22 Ω load, and the BL0939 reads that
   voltage on VP. At 120 V the signal is half the 240 V one; calibration covers both.
 - **Current:** each CT clamp (50 mA at 100 A) works into a 0.6 Ω burden (two 0.3 Ω 1 % resistors,
-  centre to ground), then ferrite beads and a 1 kΩ / 33 nF filter into the BL0939. This is the same
-  front end as Seeed's XIAO 2-channel energy meter, whose calibration it shares.
+  centre to ground) right at the terminal, then ferrite beads and a 1 kΩ / 33 nF filter into the
+  BL0939. The beads carry only the BL0939's input current, so a failed bead can't open the CT.
 - **Metering:** the BL0939 measures continuously and sends readings over UART (GPIO16/17, 4800 baud)
   to the ESP32-C6, which runs ESPHome and reports to Home Assistant.
-- **Relays:** each relay coil runs from 5 V through an MMBT3904 transistor (1 kΩ base resistor,
-  10 kΩ pull-down so it stays off while the ESP32 boots) with a 1N4148W flyback diode. GPIO22 and
+- **Relays:** each relay coil runs from 5 V through an MMBT3904 transistor (470 Ω base resistor,
+  about 5 mA, so it saturates fully at the coil's 80–93 mA; 10 kΩ pull-down so it stays off while
+  the ESP32 boots) with a 1N4148W flyback diode. GPIO22 and
   GPIO23 drive them. The contacts are dry: COM and NO go to their own terminal and switch whatever
   you wire through them.
 - **USB-C** goes straight to the ESP32-C6's native USB (GPIO12/13, with a USBLC6-2SC6 ESD protector),
@@ -128,6 +129,7 @@ creepage check, on every build:
 | L and N/L2, the input and each relay, relay 1 and relay 2 | 4 mm |
 | a relay's COM and NO (the open contact sees line voltage) | 4 mm creepage, 3 mm clearance |
 | L and N/L2 inside the 5.08 mm terminal and the HLK-PM01's pins | 2 mm (the parts' own pitch); a 1 mm slot between the terminal pins lengthens the surface path |
+| the voltage divider's nodes, to each other and to L or N/L2 | 1.5 mm clearance (two resistors apart they see about 120 V) |
 
 The relay contacts carry up to 10 A on 5 mm wide copper areas on both layers, with the solder mask
 opened so they can be tinned thicker. The case screws pass through the four mounting holes and can be
@@ -155,39 +157,45 @@ The silkscreen marks the strapping pins (4, 5, 8, 15) with `*`.
 
 ## Case
 
-Two printed parts, built in build123d from the board's own dimensions ([`case/case.py`](case/case.py)):
+Three printed parts, built in build123d from the board's own dimensions ([`case/case.py`](case/case.py)):
 
 - **Cover:** the front shell, with a pillar at each of the board's four mounting holes. The plugs
   stick out through openings in the bottom wall and USB-C through the top. There are vents over the
   power module and beside the relays. The front face is closed; the status LED shows through a
   0.6 mm thin window.
-- **Base:** the back plate, which clips onto a TS35 DIN rail. A standoff rises from it to each
-  mounting hole.
-  - **Hook (top):** 68 mm long, with a 3.5 mm thick wall and a 2.2 mm thick lip that reaches 2 mm
+- **Base:** the sealed back plate. Its only openings are the four screw holes, so nothing pushed in
+  from the back (a screwdriver, the metal DIN rail) can reach the mains parts behind the board. A
+  standoff rises from it to each mounting hole, and a rim locates it inside the cover's walls.
+- **DIN clip:** screwed under the base, it clips the case onto a TS35 rail.
+  - **Hook (top):** 65 mm long, with a 3.5 mm thick wall and a 2.2 mm thick lip that reaches 2 mm
     over the rail's flange. Five ribs behind the wall stop it bending back off the rail.
-  - **Latch (bottom):** a 20 mm wide block with the same wall and lip, on a 64 mm sprung beam.
-    The beam is long so it can flex far enough to clear the flange while staying at about half of
-    PETG's yield strain. That way it doesn't crack after a few cycles.
-  - **To take it off the rail,** lever the latch down with a screwdriver in the lower slot.
+  - **Latch (bottom):** a 20 mm wide block with the same wall and lip. It rides on four spring
+    beams cut into the clip plate, which bend in the plate's own plane, so the block slides down
+    2.4 mm to clear the flange while the beams stay at about a third of PETG's yield strain. The
+    lip's underside is a 45° ramp: rock the case onto the rail and it snaps on.
+  - **To take it off the rail,** pull the tab at the clip's bottom edge down: put a screwdriver in
+    its slot and lever.
 
-**Four screws hold everything:** M3 × 14 countersunk, from the back through the base, its standoff
-and the board, self-tapping into 2.8 mm pilot holes in the cover's pillars (no inserts). The board
-is clamped between the standoffs and the pillars, and the heads sit flush in the back face. To
+**Four screws hold everything:** M3 × 16 countersunk, from the back through the clip, the base, its
+standoff and the board, self-tapping into 2.8 mm pilot holes in the cover's pillars (no inserts). The
+board is clamped between the standoffs and the pillars, and the heads sit flush in the clip. To
 assemble, lay the cover face down, drop the board in (components down) onto the pillars, put the
-base on and fit the four screws. Nothing inside the walls stands between the board and the open
-back, and a test checks that.
+base and then the clip on, and fit the four screws. Nothing inside the walls stands between the
+board and the open back, and a test checks that.
 
 | Exploded | Board in the cover, from the back |
 |---|---|
 | ![Exploded](docs/img/case_exploded.png) | ![Board in the cover](docs/img/case_inside.png) |
 
-| On a DIN rail, from the back | The DIN clip: ribbed hook (top), latch on its sprung beam (bottom) |
+| On a DIN rail, from the back | The DIN clip: ribbed hook (top), latch on its spring beams and pull tab (bottom) |
 |---|---|
 | ![On a DIN rail](docs/img/case_din.png) | ![DIN clip](docs/img/case_clip.png) |
 
-Print in PETG (the latch has to flex): 0.2 mm layers, 3 walls, no supports. Print the base flat on
-its inside face with the clip up, and the cover on its front face. STEP files and print-oriented
-STL files are in [`case/out`](case/out).
+Print in PETG (the latch has to flex): 0.2 mm layers, 3 walls, no supports. Print the cover on its
+front face, the base on its back face (standoffs up) and the clip on its flat face (hook and latch
+up), so the spring beams bend along the layers. PETG isn't flame-retardant, which is one more reason
+to mount the case inside a closed enclosure; a flame-retardant filament is better still. STEP files
+and print-oriented STL files are in [`case/out`](case/out).
 
 ## Safety
 
@@ -227,7 +235,7 @@ to right:
 [`firmware/c6-energy-relay.yaml`](firmware/c6-energy-relay.yaml) is a starter ESPHome config. It has:
 
 - the BL0939 sensors: voltage, current, power and energy;
-- `Relay 1` and `Relay 2` switches, off after a reboot;
+- `Relay 1` and `Relay 2` switches, always off after a reboot or power cut;
 - the status LED;
 - the BOOT button, which toggles relay 1.
 
@@ -243,8 +251,9 @@ on. Logs go to the USB port, which leaves the ESP32's UART to the BL0939.
 | 9 | BOOT button | 8 | 10 kΩ pull-up (strapping) |
 
 **Calibration:** with a known resistive load and a meter, set each `*_cal` substitution to
-(meter reading ÷ reported value). The energy sensors use the power factors. The voltage factor
-starts at 1.13, because this board loads the ZMPT107 with 22 Ω where Seeed's meter uses 24.9 Ω.
+(its starting value × meter reading ÷ reported value). The energy sensors use the power factors.
+The starting values convert ESPHome's BL0939 scaling (a 1 mΩ shunt and a 0.51 kΩ / 1.95 MΩ divider) to
+this board: current × 3.33 (CTs give 0.3 mV/A), voltage × 1.28 (0.204 mV/V) and power × 4.28.
 
 ## Ordering at JLCPCB
 
@@ -313,7 +322,8 @@ The tests run:
 - a silkscreen check;
 - the JLC files against the board;
 - live JLC stock for 30 boards;
-- the case fit: the board's path in, board, plugs, screws, openings and the DIN clip;
+- the case fit: the board's path in, board, plugs, screws, openings, the sealed back, flat
+  printing and the DIN clip (including the latch's travel and spring strain);
 - the ESP32 pins in the firmware against the design;
 - ESPHome validating the config, through `esphome` on the PATH, `$ESPHOME_CMD` or `esphome-wsl`
   inside WSL.

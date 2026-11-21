@@ -69,6 +69,15 @@ MODELS = {
     "DB2ER-5.08-02P": socket_header(-2.54, -2.0, 7.62, 10.0, 7.8, 5.08, 2, 0.8),
     # WJ15EDGRC-3.81-4P: x -2.345..13.775, y -1.2..6.05, 9.2 high
     "WJ15EDGRC-3.81-04P": socket_header(-2.345, -1.2, 3 * 3.81 + 2.345, 6.05, 9.2, 3.81, 4, 0.7),
+    # stock footprints whose KiCad model isn't installed everywhere (gen_pcb.py points them here)
+    # ESP32-C6-MINI-1: 13.2 x 16.6 x 2.4 module, antenna end toward KiCad -y; shield over the rest
+    "ESP32-C6-MINI-1": part(box(-6.6, -11.0, 6.6, 5.6, 0.0, 0.8), GREEN,
+                            box(-6.1, -4.7, 6.1, 5.1, 0.8, 2.4)),
+    # TS-1187A: 5.1 x 5.1 x 1.5 tact switch with a round actuator
+    "TS-1187A": part(box(-2.55, -2.55, 2.55, 2.55, 0.0, 1.2), BLACK,
+                     Pos(0, 0, 1.35) * Cylinder(1.3, 0.3)),
+    # HRO TYPE-C-31-M-12: 8.94 x 7.3 x 3.26 receptacle shell, mouth toward KiCad +y
+    "USB-C-HRO-TYPE-C-31-M-12": part(None, BLACK, box(-4.47, -3.65, 4.47, 3.65, 0.0, 3.26)),
 }
 
 

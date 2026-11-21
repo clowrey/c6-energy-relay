@@ -25,6 +25,7 @@ PCB = ROOT / "hw" / "c6-energy-relay.kicad_pcb"
 
 COVER = (0.86, 0.87, 0.89)
 BASE = (0.30, 0.33, 0.38)
+CLIP = (0.45, 0.50, 0.58)
 RAIL = (0.75, 0.76, 0.78)
 
 
@@ -150,7 +151,7 @@ def render(actors, path, direction, up=(0, 1, 0), size=(1600, 1200), zoom=1.0, a
 
 def case_views(img: Path):
     features = json.loads((ROOT / "hw" / "out" / "board_features.json").read_text())
-    base, cover = casemod.build_case(features)
+    base, cover, clip = casemod.build_case(features)
     w, h = features["outline_mm"]
     with tempfile.TemporaryDirectory() as tmp:
         glb = Path(tmp) / "board.glb"
@@ -178,16 +179,18 @@ def case_views(img: Path):
             return actors
 
         # 1. closed case from the front, below left: front face, LED window, plug openings
-        acts = [shape_actor(cover, COVER), shape_actor(base, BASE)] + board()
+        acts = [shape_actor(cover, COVER), shape_actor(base, BASE), shape_actor(clip, CLIP)] + board()
         render(centred(acts), img / "case_front.png", direction=(-0.55, -0.75, 1.0), zoom=1.0)
 
-        # 2. exploded along z: base, board, cover
+        # 2. exploded along z: clip, base, board, cover
         acts = [shape_actor(base, BASE)] + board()
         a_cover = shape_actor(cover, COVER)
         place([a_cover], dz=40.0)
         a_base = acts[0]
-        place([a_base], dz=-30.0)
-        render(centred(acts + [a_cover]), img / "case_exploded.png", direction=(-1.0, -0.55, 0.45),
+        place([a_base], dz=-25.0)
+        a_clip = shape_actor(clip, CLIP)
+        place([a_clip], dz=-50.0)
+        render(centred(acts + [a_cover, a_clip]), img / "case_exploded.png", direction=(-1.0, -0.55, 0.45),
                up=(0, 0, 1), zoom=1.0)
 
         # 3. the board in the cover, seen from the back (base off)
@@ -195,12 +198,14 @@ def case_views(img: Path):
         render(centred(acts), img / "case_inside.png", direction=(0.35, -0.45, -1.0), zoom=1.0)
 
         # 4. on a TS35 rail, seen from the back: the hook and the sprung latch
-        rail = ts35_rail(h / 2, casemod.Z_BACK_OUT, -30, w + 30)
-        acts = [shape_actor(cover, COVER), shape_actor(base, BASE), shape_actor(rail, RAIL)]
+        rail = ts35_rail(h / 2, casemod.Z_CLIP_OUT, -30, w + 30)
+        acts = [shape_actor(cover, COVER), shape_actor(base, BASE), shape_actor(clip, CLIP),
+                shape_actor(rail, RAIL)]
         render(centred(acts), img / "case_din.png", direction=(0.6, -0.55, -1.0), zoom=1.0)
 
-        # 5. the base alone, from the back and the side: hook, its ribs, the latch on its sprung beam
-        render(centred([shape_actor(base, (0.55, 0.6, 0.68))]), img / "case_clip.png", direction=(-1.0, 0.45, -0.75),
+        # 5. the DIN clip alone, from the back: hook and ribs, the latch on its four spring beams, the
+        # pull tab
+        render(centred([shape_actor(clip, (0.55, 0.6, 0.68))]), img / "case_clip.png", direction=(-1.0, 0.45, -0.75),
                zoom=1.0)
 
 

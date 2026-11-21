@@ -124,26 +124,26 @@ COMPONENTS: list[Comp] = [
       footprint="TestPoint:TestPoint_Pad_D1.0mm", dnp=True, block="meter"),
     C("TP3", None, {"1": "I_LEAK"}, value="I_LEAK", symbol="Connector:TestPoint",
       footprint="TestPoint:TestPoint_Pad_D1.0mm", dnp=True, block="meter"),
-    # CT inputs: J4 = CT1+, CT1-, CT2+, CT2-; 0.6 ohm burden (2 x 0.3, centre GND), bead, 1k + 33n
+    # CT inputs: J4 = CT1+, CT1-, CT2+, CT2-; 0.6 ohm burden (2 x 0.3, centre GND) straight across the
+    # terminal, then bead, 1k + 33n. The beads carry only the filter current: a failed bead can't open a CT
     C("J4", "term381_hdr", {"1": "CT1P", "2": "CT1N", "3": "CT2P", "4": "CT2N"}, value="CT1+ CT1- CT2+ CT2-",
       block="meter"),
 ]
 for i, (ct, ip) in enumerate((("CT1P", "IP1"), ("CT1N", "IN1"), ("CT2P", "IP2"), ("CT2N", "IN2"))):
     COMPONENTS += [
+        C(f"R{8 + i}", "r0r3", {"1": ct, "2": "GND"}, block="meter"),
         C(f"FB{i + 1}", "ferrite", {"1": ct, "2": f"{ct}_B"}, block="meter"),
-        C(f"R{8 + i}", "r0r3", {"1": f"{ct}_B", "2": "GND"}, block="meter"),
         C(f"R{12 + i}", "r1k", {"1": f"{ct}_B", "2": ip}, block="meter"),
         C(f"C{1 + i}", "c33n", {"1": ip, "2": "GND"}, block="meter"),
     ]
 COMPONENTS += [
-    # voltage: ZMPT primary from L_F, then 5 x 22k back to N_F (chain on the N side keeps the layout
+    # voltage: ZMPT primary from L_F, then 4 x 27k back to N_F (chain on the N side keeps the layout
     # free of L/N crossings); 22R secondary load
     C("T1", "zmpt", {"1": "L_F", "2": "ZP1", "3": "VS", "4": "GND"}, block="vsense"),
-    C("R1", "r22k", {"1": "ZP1", "2": "VD1"}, block="vsense"),
-    C("R2", "r22k", {"1": "VD1", "2": "VD2"}, block="vsense"),
-    C("R3", "r22k", {"1": "VD2", "2": "VD3"}, block="vsense"),
-    C("R4", "r22k", {"1": "VD3", "2": "VD4"}, block="vsense"),
-    C("R5", "r22k", {"1": "VD4", "2": "N_F"}, block="vsense"),
+    C("R1", "r27k", {"1": "ZP1", "2": "VD1"}, block="vsense"),
+    C("R2", "r27k", {"1": "VD1", "2": "VD2"}, block="vsense"),
+    C("R3", "r27k", {"1": "VD2", "2": "VD3"}, block="vsense"),
+    C("R4", "r27k", {"1": "VD3", "2": "N_F"}, block="vsense"),
     C("R6", "r22", {"1": "VS", "2": "GND"}, block="vsense"),
     C("R7", "r1k", {"1": "VS", "2": "VP"}, block="vsense"),
     C("C5", "c33n", {"1": "VP", "2": "GND"}, block="vsense"),
@@ -153,7 +153,9 @@ for k, (q, d, rb, rp) in ((1, ("Q1", "D2", "R23", "R25")), (2, ("Q2", "D3", "R24
         C(f"K{k}", "relay", {"1": "+5V", "2": f"K{k}_COIL", "3": f"K{k}_COM", "4": f"K{k}_NO"}, block="relay"),
         C(q, "npn", {"1": f"Q{k}_B", "2": "GND", "3": f"K{k}_COIL"}, block="relay"),
         C(d, "flyback", {"1": "+5V", "2": f"K{k}_COIL"}, block="relay"),
-        C(rb, "r1k", {"1": f"RLY{k}_DRV", "2": f"Q{k}_B"}, block="relay"),
+        # 470R: ~5 mA base current, forced gain ~18 at the 93 mA worst-case coil current (MMBT3904
+        # hFE is only 30 minimum at 100 mA), so the transistor saturates even from a weak GPIO high
+        C(rb, "r470", {"1": f"RLY{k}_DRV", "2": f"Q{k}_B"}, block="relay"),
         C(rp, "r10k", {"1": f"Q{k}_B", "2": "GND"}, block="relay"),
         C(f"J{k + 1}", "term508_hdr", {"1": f"K{k}_COM", "2": f"K{k}_NO"}, value=f"RELAY{k} COM NO", block="relay"),
     ]
@@ -178,11 +180,11 @@ for _c in COMPONENTS:
 
 NETCLASS: dict[str, str] = {}
 for _n in NETS:
-    if _n in ("L_IN", "L_F"):
+    if _n in ("L_IN", "L_F", "ZP1"):            # ZP1: after T1's low-impedance primary, so it sits at L
         NETCLASS[_n] = "MAINS_L"
     elif _n in ("N_IN", "N_F"):
         NETCLASS[_n] = "MAINS_N"
-    elif _n in ("VD1", "VD2", "VD3", "VD4", "ZP1"):
+    elif _n in ("VD1", "VD2", "VD3"):
         NETCLASS[_n] = "MAINS_DIV"
     elif _n.startswith("K1_") and _n != "K1_COIL":
         NETCLASS[_n] = "RELAY1"

@@ -34,30 +34,30 @@ t("L_F", ("F1", "2"), (24.2, 56.0), ("RV1", "1"), w=1.0)
 t("L_F", ("F1", "2"), (28.8, 49.0), (29.5, 49.3), w=1.0)  # ends inside the HLK pad
 t("N_F", ("F2", "2"), (36.2, 49.0), (35.5, 49.3), w=1.0)
 t("N_F", ("F2", "2"), (39.17, 57.63), ("RV1", "2"), w=1.0)
-t("N_F", (39.17, 57.63), ("R5", "2"), w=0.6)
+t("N_F", ("R4", "2"), ("RV1", "2"), w=0.6)
 t("ZP1", ("T1", "2"), (22.59, 61.54), ("R1", "1"), w=0.5)
 t("VD1", ("R1", "2"), ("R2", "1"), w=0.5)
 t("VD2", ("R2", "2"), ("R3", "1"), w=0.5)
 t("VD3", ("R3", "2"), ("R4", "1"), w=0.5)
-t("VD4", ("R4", "2"), ("R5", "1"), w=0.5)
 
 # ======================================================================== CT inputs ============
-# terminal -> bead -> burden node; a via beside each node drops the signal to the bottom layer
+# terminal -> burden (the whole CT loop); a bead beside each column takes the node off to the
+# filter, and a via above the bead drops the signal to the bottom layer
 CT_X = {"CT1P": 3.2, "CT1N": 7.01, "CT2P": 10.82, "CT2N": 14.63}
 for i, (ct, x) in enumerate(CT_X.items()):
     fb, rb = f"FB{i + 1}", f"R{8 + i}"
-    t(ct, ("J4", str(i + 1)), (fb, "1"), w=0.4)
-    t(f"{ct}_B", (fb, "2"), (rb, "1"), w=0.3)
-    t(f"{ct}_B", (x, 68.95), (x - 1.5, 68.95), w=0.3, vias=[(x - 1.5, 68.95)])
+    t(ct, ("J4", str(i + 1)), (rb, "1"), w=0.4)
+    t(ct, (x, 71.39), (fb, "1"), w=0.3)
+    t(f"{ct}_B", (fb, "2"), (x - 2.0, 68.95), w=0.3, vias=[(x - 2.0, 68.95)])
 
 # bottom-layer bundle from the burden nodes up to the RC filters (stays >= 6.5 mm from T1's primary)
 #   via at the filter (under the resistor's left pad) -> down -> 45-degree into a 0.8 mm-pitch bundle
 #   -> down beside T1's secondary -> fan out to the node vias above the terminal
 BUNDLE = [  # net, filter via, bend-start y, bundle x, fan bend y, node via
-    ("CT1P_B", (1.19, 32.35), 46.7, 7.0, 60.5, (1.7, 68.95)),
-    ("CT1N_B", (1.89, 35.55), 46.2, 7.8, 61.5, (5.51, 68.95)),
-    ("CT2P_B", (2.59, 38.75), 45.7, 8.6, 62.0, (9.32, 68.95)),
-    ("CT2N_B", (3.30, 41.95), 45.2, 9.4, 62.0, (13.13, 68.95)),
+    ("CT1P_B", (1.19, 32.35), 46.7, 7.0, 60.5, (1.2, 68.95)),
+    ("CT1N_B", (1.89, 35.55), 46.2, 7.8, 61.5, (5.01, 68.95)),
+    ("CT2P_B", (2.59, 38.75), 45.7, 8.6, 62.0, (8.82, 68.95)),
+    ("CT2N_B", (3.30, 41.95), 45.2, 9.4, 62.0, (12.63, 68.95)),
 ]
 for net, (fx, fy), y_bend, bx, y_fan, (nx, ny) in BUNDLE:
     d1 = bx - fx                       # 45-degree run into the bundle
