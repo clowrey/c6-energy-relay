@@ -282,7 +282,7 @@ def write_project():
                         "line_style": 0, "pcb_color": "rgba(0, 0, 0, 0.000)",
                         "schematic_color": "rgba(0, 0, 0, 0.000)",
                         "priority": 2147483647 if name == "Default" else i})
-    patterns = [{"netclass": cls, "pattern": net} for net, cls in sorted(design.NETCLASS.items())]
+    patterns = [{"netclass": cls, "pattern": "/" + net} for net, cls in sorted(design.NETCLASS.items())]
     proj = {
         "meta": {"filename": f"{PROJECT}.kicad_pro", "version": 3},
         "board": {"design_settings": {

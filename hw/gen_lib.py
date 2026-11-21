@@ -229,6 +229,12 @@ def fp_wj15():
     return fp
 
 
+def add_model(fp, name):
+    m = pcbnew.FP_3DMODEL()
+    m.m_Filename = "${KIPRJMOD}/lib/c6er.3dshapes/" + name + ".step"
+    fp.Models().append(m)
+
+
 def main():
     LIB.mkdir(exist_ok=True)
     SYM.write_text(symbols(), encoding="utf8", newline="\n")
@@ -237,6 +243,7 @@ def main():
     PRETTY.mkdir()
     io = pcbnew.PCB_IO_KICAD_SEXPR()
     for f in (fp_relay(), fp_zmpt(), fp_db2er(), fp_wj15()):
+        add_model(f, f.GetFPID().GetLibItemName().c_str())
         io.FootprintSave(str(PRETTY), f)
     print("wrote", SYM, "and", sorted(os.listdir(PRETTY)))
 

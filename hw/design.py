@@ -44,7 +44,7 @@ GPIO = {
     "USB_DN": 12, "USB_DP": 13,      # native USB Serial/JTAG
     "UART_TX": 16, "UART_RX": 17,    # to BL0939 RX / from BL0939 TX, 4800 baud
     "BOOT": 9,                       # BOOT button, usable as a button after boot
-    "RELAY1": 19, "RELAY2": 18,      # relay drivers (not strapping pins)
+    "RELAY1": 22, "RELAY2": 23,      # relay drivers (not strapping pins)
     "LED": 2,                        # status LED
 }
 ESP_IO_PINS = {  # ESP32-C6-MINI-1 module pin -> GPIO (RXD0 = GPIO17, TXD0 = GPIO16)
@@ -53,9 +53,10 @@ ESP_IO_PINS = {  # ESP32-C6-MINI-1 module pin -> GPIO (RXD0 = GPIO17, TXD0 = GPI
 }
 ESP_GND_PINS = ["1", "2", "11", "14"] + [str(n) for n in range(36, 54)]
 
-# 2 x 9 header, pin 1 = 3V3; odd pins in one row, even in the other. Strapping pins marked on silk.
-HEADER_PINS = ["3V3", "+5V", "IO0", "IO8", "IO1", "IO14", "IO3", "IO15", "IO4", "IO20",
-               "IO5", "IO21", "IO6", "IO22", "IO7", "IO23", "GND", "GND"]
+# 2 x 9 header (holes only): odd pins in one row, even in the other, ordered so the module's pins fan
+# out to it without crossings. Strapping pins (IO4, IO5, IO8, IO15) are marked on the silkscreen.
+HEADER_PINS = ["+5V", "3V3", "IO4", "IO3", "IO0", "IO5", "IO6", "IO1", "IO14", "IO7",
+               "IO8", "IO15", "IO19", "IO18", "IO21", "IO20", "GND", "GND"]
 
 
 def _gpio_net(n: int) -> str:
@@ -135,13 +136,14 @@ for i, (ct, ip) in enumerate((("CT1P", "IP1"), ("CT1N", "IN1"), ("CT2P", "IP2"),
         C(f"C{1 + i}", "c33n", {"1": ip, "2": "GND"}, block="meter"),
     ]
 COMPONENTS += [
-    # voltage: 5 x 22k from L_F to the ZMPT primary, primary back to N_F; 22R secondary load
-    C("R1", "r22k", {"1": "L_F", "2": "VD1"}, block="vsense"),
+    # voltage: ZMPT primary from L_F, then 5 x 22k back to N_F (chain on the N side keeps the layout
+    # free of L/N crossings); 22R secondary load
+    C("T1", "zmpt", {"1": "L_F", "2": "ZP1", "3": "VS", "4": "GND"}, block="vsense"),
+    C("R1", "r22k", {"1": "ZP1", "2": "VD1"}, block="vsense"),
     C("R2", "r22k", {"1": "VD1", "2": "VD2"}, block="vsense"),
     C("R3", "r22k", {"1": "VD2", "2": "VD3"}, block="vsense"),
     C("R4", "r22k", {"1": "VD3", "2": "VD4"}, block="vsense"),
-    C("R5", "r22k", {"1": "VD4", "2": "ZP1"}, block="vsense"),
-    C("T1", "zmpt", {"1": "ZP1", "2": "N_F", "3": "VS", "4": "GND"}, block="vsense"),
+    C("R5", "r22k", {"1": "VD4", "2": "N_F"}, block="vsense"),
     C("R6", "r22", {"1": "VS", "2": "GND"}, block="vsense"),
     C("R7", "r1k", {"1": "VS", "2": "VP"}, block="vsense"),
     C("C5", "c33n", {"1": "VP", "2": "GND"}, block="vsense"),

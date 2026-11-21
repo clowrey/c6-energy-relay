@@ -7,7 +7,7 @@
 	(property "Reference" "REF**"
 		(at 2.54 -3.5 0)
 		(layer "F.SilkS")
-		(uuid "4cd98fec-ccb1-4afc-9b04-bd6ff7211a42")
+		(uuid "e1c86e4a-edff-4bf5-a245-5844c5314e65")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17,7 +17,7 @@
 	(property "Value" "DB2ER-5.08-02P"
 		(at 2.54 4 0)
 		(layer "F.Fab")
-		(uuid "05d6330e-f34f-4398-93a8-fe65edbcc2bb")
+		(uuid "062542fc-4cf7-41fc-9dfd-785e244e65d8")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -28,7 +28,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "bffcbb84-34a4-4ded-9964-d14d0af8d19c")
+		(uuid "484e6c5b-353c-4970-895d-7844942fc61b")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -39,7 +39,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "607502ea-f9aa-46b9-ab0f-6cba1c82fe0c")
+		(uuid "d56fb699-4da3-42f3-84d4-70b1dcb6c82b")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -57,7 +57,7 @@
 		)
 		(fill no)
 		(layer "F.SilkS")
-		(uuid "25fafd43-0d05-42df-aef9-b821021c60bb")
+		(uuid "4125a97a-8258-4f6d-af4e-e595196cfbdf")
 	)
 	(fp_line
 		(start 2.04 -2.6)
@@ -67,7 +67,7 @@
 			(type default)
 		)
 		(layer "Edge.Cuts")
-		(uuid "12e34640-30d3-4fbc-80ff-cc4b0711e945")
+		(uuid "8ca9c7c0-b817-4ecc-8d01-7a111d66285d")
 	)
 	(fp_line
 		(start 3.04 -2.6)
@@ -77,7 +77,7 @@
 			(type default)
 		)
 		(layer "Edge.Cuts")
-		(uuid "89e86206-ad25-447f-a608-c4d2bbfa643c")
+		(uuid "87c26b20-f272-48e4-8cea-8d633edbc95d")
 	)
 	(fp_arc
 		(start 2.04 -2.6)
@@ -88,7 +88,7 @@
 			(type default)
 		)
 		(layer "Edge.Cuts")
-		(uuid "cb64bc5e-7079-4c29-b755-f820512a0b34")
+		(uuid "3f7fa0f2-e348-4622-a777-0ac48f41e229")
 	)
 	(fp_arc
 		(start 3.04 3.4)
@@ -99,7 +99,7 @@
 			(type default)
 		)
 		(layer "Edge.Cuts")
-		(uuid "d06d827e-7346-4519-a32d-31909b69a254")
+		(uuid "2c3d3efa-8158-4f33-8518-aad7b329c53a")
 	)
 	(fp_rect
 		(start -3.04 -2.5)
@@ -110,7 +110,7 @@
 		)
 		(fill no)
 		(layer "F.CrtYd")
-		(uuid "d808d492-8aa4-4d72-adfb-80aaefd4929c")
+		(uuid "ba1370d9-b9fe-4bb0-ae0b-d61b07bfb838")
 	)
 	(fp_rect
 		(start -2.54 -2)
@@ -121,7 +121,7 @@
 		)
 		(fill no)
 		(layer "F.Fab")
-		(uuid "df4b5383-9df3-435e-ac17-5342a2d6be55")
+		(uuid "9e1f7bc5-ff42-446b-bf4a-f113ba309543")
 	)
 	(pad "1" thru_hole rect
 		(at 0 0)
@@ -130,7 +130,7 @@
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(thermal_bridge_angle 45)
-		(uuid "b5e5cc2f-1fc8-439b-8188-7dfcb70ae6bc")
+		(uuid "7dba9d40-398d-4e41-b30b-b0c9c5f25f76")
 	)
 	(pad "2" thru_hole circle
 		(at 5.08 0)
@@ -138,7 +138,18 @@
 		(drill 1.7)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
-		(uuid "ff95333a-9e92-4cfa-aba9-51c722a48028")
+		(uuid "b0d6427a-9590-4e36-be9c-02eefc4cb2c5")
 	)
 	(embedded_fonts no)
+	(model "${KIPRJMOD}/lib/c6er.3dshapes/DB2ER-5.08-02P.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
 )
