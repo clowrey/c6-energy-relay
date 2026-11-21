@@ -69,7 +69,7 @@ _LIST = [
     Part("ferrite", "C1002", "Device:FerriteBead_Small", "Inductor_SMD:L_0603_1608Metric", "600R@100MHz",
          per_board=4, mpn="GZ1608D601TF"),
     # --- resistors ----------------------------------------------------------------------------
-    Part("r1k", "C21190", "Device:R", _R0603, "1k", per_board=10),
+    Part("r1k", "C21190", "Device:R", _R0603, "1k", per_board=8),
     Part("r10k", "C25804", "Device:R", _R0603, "10k", per_board=6),
     Part("r5k1", "C23186", "Device:R", _R0603, "5.1k", per_board=2),
     Part("r22", "C23345", "Device:R", _R0603, "22R 1%", per_board=1),
@@ -77,7 +77,7 @@ _LIST = [
     Part("r0r3", "C59882", "Device:R", "Resistor_SMD:R_1206_3216Metric", "0.3R 1%", per_board=4),
     # --- capacitors ---------------------------------------------------------------------------
     Part("c33n", "C21117", "Device:C", _C0603, "33nF", per_board=5),
-    Part("c100n", "C14663", "Device:C", _C0603, "100nF", per_board=5),
+    Part("c100n", "C14663", "Device:C", _C0603, "100nF", per_board=3),
     Part("c1u", "C15849", "Device:C", _C0603, "1uF", per_board=1),
     Part("c10u", "C15850", "Device:C", _C0805, "10uF", per_board=2),
     Part("c22u", "C45783", "Device:C", _C0805, "22uF", per_board=2),

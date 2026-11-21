@@ -1,0 +1,463 @@
+{
+  "meta": {
+    "filename": "c6-energy-relay.kicad_pro",
+    "version": 3
+  },
+  "board": {
+    "design_settings": {
+      "rules": {
+        "min_clearance": 0.15,
+        "min_copper_edge_clearance": 0.5,
+        "min_hole_clearance": 0.25,
+        "min_hole_to_hole": 0.25,
+        "min_through_hole_diameter": 0.3,
+        "min_track_width": 0.15,
+        "min_via_annular_width": 0.13,
+        "min_via_diameter": 0.5,
+        "min_silk_clearance": 0.0,
+        "solder_mask_to_copper_clearance": 0.0,
+        "use_height_for_length_calcs": true
+      },
+      "track_widths": [
+        0.0,
+        0.2,
+        0.3,
+        0.5,
+        1.0,
+        2.5
+      ],
+      "via_dimensions": [
+        {
+          "diameter": 0.0,
+          "drill": 0.0
+        },
+        {
+          "diameter": 0.6,
+          "drill": 0.3
+        }
+      ]
+    }
+  },
+  "net_settings": {
+    "classes": [
+      {
+        "name": "Default",
+        "clearance": 0.2,
+        "track_width": 0.2,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.2,
+        "diff_pair_via_gap": 0.25,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 2147483647
+      },
+      {
+        "name": "LV",
+        "clearance": 0.2,
+        "track_width": 0.2,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.2,
+        "diff_pair_via_gap": 0.25,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 1
+      },
+      {
+        "name": "POWER",
+        "clearance": 0.2,
+        "track_width": 0.5,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.2,
+        "diff_pair_via_gap": 0.25,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 2
+      },
+      {
+        "name": "MAINS_L",
+        "clearance": 0.5,
+        "track_width": 1.0,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.2,
+        "diff_pair_via_gap": 0.25,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 3
+      },
+      {
+        "name": "MAINS_N",
+        "clearance": 0.5,
+        "track_width": 1.0,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.2,
+        "diff_pair_via_gap": 0.25,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 4
+      },
+      {
+        "name": "MAINS_DIV",
+        "clearance": 0.5,
+        "track_width": 0.5,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.2,
+        "diff_pair_via_gap": 0.25,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 5
+      },
+      {
+        "name": "RELAY1",
+        "clearance": 0.5,
+        "track_width": 2.5,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.2,
+        "diff_pair_via_gap": 0.25,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 6
+      },
+      {
+        "name": "RELAY2",
+        "clearance": 0.5,
+        "track_width": 2.5,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+        "microvia_diameter": 0.3,
+        "microvia_drill": 0.1,
+        "diff_pair_width": 0.2,
+        "diff_pair_gap": 0.2,
+        "diff_pair_via_gap": 0.25,
+        "wire_width": 6,
+        "bus_width": 12,
+        "line_style": 0,
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "priority": 7
+      }
+    ],
+    "meta": {
+      "version": 5
+    },
+    "net_colors": {},
+    "netclass_assignments": {},
+    "netclass_patterns": [
+      {
+        "netclass": "POWER",
+        "pattern": "+5V"
+      },
+      {
+        "netclass": "POWER",
+        "pattern": "3V3"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "BOOT"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CC1"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CC2"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CF"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CT1N"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CT1N_B"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CT1P"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CT1P_B"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CT2N"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CT2N_B"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CT2P"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "CT2P_B"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "EN"
+      },
+      {
+        "netclass": "POWER",
+        "pattern": "GND"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IN1"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IN2"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO0"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO1"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO14"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO15"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO20"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO21"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO22"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO23"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO3"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO4"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO5"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO6"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO7"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IO8"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IP1"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "IP2"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "I_LEAK"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "K1_COIL"
+      },
+      {
+        "netclass": "RELAY1",
+        "pattern": "K1_COM"
+      },
+      {
+        "netclass": "RELAY1",
+        "pattern": "K1_NO"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "K2_COIL"
+      },
+      {
+        "netclass": "RELAY2",
+        "pattern": "K2_COM"
+      },
+      {
+        "netclass": "RELAY2",
+        "pattern": "K2_NO"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "LED"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "LED_A"
+      },
+      {
+        "netclass": "MAINS_L",
+        "pattern": "L_F"
+      },
+      {
+        "netclass": "MAINS_L",
+        "pattern": "L_IN"
+      },
+      {
+        "netclass": "MAINS_N",
+        "pattern": "N_F"
+      },
+      {
+        "netclass": "MAINS_N",
+        "pattern": "N_IN"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "Q1_B"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "Q2_B"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "RLY1_DRV"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "RLY2_DRV"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "SEL"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "UART_RX"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "UART_TX"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "USB_DN"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "USB_DP"
+      },
+      {
+        "netclass": "POWER",
+        "pattern": "VBUS"
+      },
+      {
+        "netclass": "MAINS_DIV",
+        "pattern": "VD1"
+      },
+      {
+        "netclass": "MAINS_DIV",
+        "pattern": "VD2"
+      },
+      {
+        "netclass": "MAINS_DIV",
+        "pattern": "VD3"
+      },
+      {
+        "netclass": "MAINS_DIV",
+        "pattern": "VD4"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "VP"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "VS"
+      },
+      {
+        "netclass": "MAINS_DIV",
+        "pattern": "ZP1"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "ZX"
+      }
+    ]
+  },
+  "sheets": [
+    [
+      "87a3170e-7996-59d4-9a9a-6a095bc8520c",
+      "Root"
+    ]
+  ],
+  "text_variables": {}
+}

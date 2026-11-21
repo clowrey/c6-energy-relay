@@ -1,4 +1,4 @@
 (fp_lib_table
-  (version 7)
-  (lib (name "c6er")(type "KiCad")(uri "${KIPRJMOD}/lib/c6er.pretty")(options "")(descr "C6 energy relay footprints"))
+	(version 7)
+	(lib (name "c6er") (type "KiCad") (uri "${KIPRJMOD}/lib/c6er.pretty") (options "") (descr "C6 energy relay footprints"))
 )

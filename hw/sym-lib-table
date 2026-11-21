@@ -1,4 +1,4 @@
 (sym_lib_table
-  (version 7)
-  (lib (name "c6er")(type "KiCad")(uri "${KIPRJMOD}/lib/c6er.kicad_sym")(options "")(descr "C6 energy relay parts"))
+	(version 7)
+	(lib (name "c6er") (type "KiCad") (uri "${KIPRJMOD}/lib/c6er.kicad_sym") (options "") (descr "C6 energy relay parts"))
 )
