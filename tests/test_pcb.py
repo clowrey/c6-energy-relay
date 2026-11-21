@@ -95,13 +95,15 @@ def test_mounting_holes(board_dump):
 
 
 def test_mains_far_from_holes(board_dump):
-    """Screw heads (5.5 mm) keep 4 mm from any mains copper."""
+    """The case screws pass through these holes and can be touched from the back of the case: each
+    hole's edge (3.2 mm) keeps 6.5 mm from any mains copper, measured to the exact track and arc
+    geometry (the case tests' copper boxes are too coarse for this)."""
     mains = [i for i in board_dump["copper"] if i["netclass"].startswith(("MAINS", "RELAY"))]
     for h in (f for f in board_dump["footprints"] if f["ref"].startswith("H")):
         for m in mains:
             if m["kind"] == "zone":
                 d = min(((p[0] - h["x"]) ** 2 + (p[1] - h["y"]) ** 2) ** 0.5 for p in m["points"])
-                assert d >= 2.75 + 4.0, (h["ref"], m["net"])
+                assert d >= 1.6 + 6.5, (h["ref"], m["net"])
                 continue
             if m["kind"] == "PCB_TRACK":
                 d = _seg_dist((h["x"], h["y"]), m["start"], m["end"]) - m["width"] / 2
@@ -113,7 +115,7 @@ def test_mains_far_from_holes(board_dump):
                 dx = max(bx0 - h["x"], 0, h["x"] - bx1)
                 dy = max(by0 - h["y"], 0, h["y"] - by1)
                 d = (dx * dx + dy * dy) ** 0.5
-            assert d >= 2.75 + 4.0, (h["ref"], m["net"], round(d, 2))
+            assert d >= 1.6 + 6.5, (h["ref"], m["net"], round(d, 2))
 
 
 def _arc_points(start, mid, end, n=24):

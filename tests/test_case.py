@@ -58,7 +58,7 @@ def test_solids_valid(parts):
 
 def test_board_fits(parts, board):
     for p in parts:
-        assert _overlap(p, board) < 1.0, _overlap(p, board)   # contact faces at the screw bosses only
+        assert _overlap(p, board) < 1.0, _overlap(p, board)   # contact faces at the pillars and standoffs only
 
 
 def test_plugs_clear(parts):
@@ -102,26 +102,39 @@ def test_din_clip_span(parts):
     assert base.is_inside(Vector(x, yc - case.RAIL_SPAN / 2 - 0.3, zl))
 
 
-def test_case_screws_far_from_mains():
-    """Base screws are reachable from outside: 6.5 mm from any mains copper (M3 shank radius 1.5)."""
+def test_board_goes_in(parts):
+    """The board drops into the cover from the open back: nothing inside the walls stands in the
+    path its outline sweeps from the back edge down to its seat on the pillars."""
+    _, cover = parts
     w, h = FEATURES["outline_mm"]
-    for x, y in case.corner_bosses(w, h):
-        for bx0, by0, bx1, by1 in FEATURES["mains_copper"]:
-            dx = max(bx0 - x, 0, x - bx1)
-            dy = max(by0 - y, 0, y - by1)
-            assert (dx * dx + dy * dy) ** 0.5 - 1.5 >= 6.5, ((x, y), (bx0, by0, bx1, by1))
+    path = case.slab(0, w, 0, h, case.Z_BACK_IN - 1.0, case.Z_BOARD_TOP - 0.05, FEATURES["corner_r"])
+    assert _overlap(cover, path) < 0.01, _overlap(cover, path)
+    # and it seats on the pillars
+    for x, y, _ in FEATURES["holes"]:
+        assert cover.is_inside(Vector(x + 2.5, y, case.Z_BOARD_TOP + 0.2))
 
 
 def test_screws_fit(parts):
-    from build123d import Cylinder
+    """One M3 x 14 countersunk screw per hole: flush in the back face, through the base standoff and
+    the board, at least 5 mm into the pillar's pilot and short of its end."""
     base, cover = parts
-    # base screws end inside the boss, short of the board
-    assert case.Z_BACK_OUT + case.M3_HEAD_RECESS + case.BASE_SCREW_LEN <= -0.5
-    # board-screw heads (pan head 5.6 x 2.4 under the board) and a 5.6 mm driver path clear of the case
+    assert case.CSK_D >= 6.0                                      # M3 flat head is 5.5-6.0 mm
+    tip = case.Z_BACK_OUT + case.SCREW_LEN
+    assert tip - case.Z_BOARD_TOP >= 5.0
+    assert tip <= case.Z_BOARD_TOP + case.M3_PILOT_DEPTH - 0.5
     for x, y, _ in FEATURES["holes"]:
-        head = Pos(x, y, -1.2) * Cylinder(2.8, 2.4)
-        for p in parts:
-            assert _overlap(p, head) < 0.01, ((x, y), _overlap(p, head))
+        # standoff clamps the board: plastic up to the board's solder side, clear hole down its middle
+        assert base.is_inside(Vector(x + 2.5, y, -0.2))
+        for z in (case.Z_BACK_OUT + 0.1, -2.0, -0.2):
+            assert not base.is_inside(Vector(x + 1.6, y, z)), ((x, y), z)
+        # countersink: open at 3.2 mm out at the back face, plastic beside it
+        assert not base.is_inside(Vector(x + 3.1, y, case.Z_BACK_OUT + 0.1))
+        assert base.is_inside(Vector(x + 3.6, y, case.Z_BACK_OUT + 0.1))
+        # the head and a driver get in from behind: nothing of the base behind the back face
+        for dx in (-3.0, 0.0, 3.0):
+            assert not base.is_inside(Vector(x + dx, y, case.Z_BACK_OUT - 1.0)), ((x, y), dx)
+        # the screw path through the cover: pilot only, no plastic in the board's hole or behind it
+        assert not cover.is_inside(Vector(x, y, -2.0))
 
 
 def test_din_clip_strong(parts):

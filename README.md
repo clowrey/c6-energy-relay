@@ -130,8 +130,9 @@ creepage check, on every build:
 | L and N/L2 inside the 5.08 mm terminal and the HLK-PM01's pins | 2 mm (the parts' own pitch); a 1 mm slot between the terminal pins lengthens the surface path |
 
 The relay contacts carry up to 10 A on 5 mm wide copper areas on both layers, with the solder mask
-opened so they can be tinned thicker. One mounting hole sits between the input and the CT area, so
-it has a copper-free ring: a metal screw there can't bridge ground towards mains.
+opened so they can be tinned thicker. The case screws pass through the four mounting holes and can be
+touched from the back of the case, so every hole keeps 6.5 mm from mains copper, the same as the
+low-voltage side. The hole between the input and the CT area also has a copper-free ring.
 
 **Layers.** The board is routed by hand, with every bend rounded into an arc. The tracks are listed
 in [`hw/routes.py`](hw/routes.py), and [`hw/route.py`](hw/route.py) rounds the bends as it lays them:
@@ -156,18 +157,25 @@ The silkscreen marks the strapping pins (4, 5, 8, 15) with `*`.
 
 Two printed parts, built in build123d from the board's own dimensions ([`case/case.py`](case/case.py)):
 
-- **Cover:** the front shell. The board screws to four pillars inside it from the solder side
-  (4 × M3 × 8, self-tapping into 2.8 mm pilot holes, no inserts). The plugs stick out through
-  openings in the bottom wall and USB-C through the top. There are vents over the power module and
-  beside the relays. The front face is closed; the status LED shows through a 0.6 mm thin window.
-- **Base:** the back plate, which clips onto a TS35 DIN rail. Four M3 × 4 screws hold it to the
-  cover from the back.
+- **Cover:** the front shell, with a pillar at each of the board's four mounting holes. The plugs
+  stick out through openings in the bottom wall and USB-C through the top. There are vents over the
+  power module and beside the relays. The front face is closed; the status LED shows through a
+  0.6 mm thin window.
+- **Base:** the back plate, which clips onto a TS35 DIN rail. A standoff rises from it to each
+  mounting hole.
   - **Hook (top):** 68 mm long, with a 3.5 mm thick wall and a 2.2 mm thick lip that reaches 2 mm
     over the rail's flange. Five ribs behind the wall stop it bending back off the rail.
   - **Latch (bottom):** a 20 mm wide block with the same wall and lip, on a 64 mm sprung beam.
     The beam is long so it can flex far enough to clear the flange while staying at about half of
     PETG's yield strain. That way it doesn't crack after a few cycles.
   - **To take it off the rail,** lever the latch down with a screwdriver in the lower slot.
+
+**Four screws hold everything:** M3 × 14 countersunk, from the back through the base, its standoff
+and the board, self-tapping into 2.8 mm pilot holes in the cover's pillars (no inserts). The board
+is clamped between the standoffs and the pillars, and the heads sit flush in the back face. To
+assemble, lay the cover face down, drop the board in (components down) onto the pillars, put the
+base on and fit the four screws. Nothing inside the walls stands between the board and the open
+back, and a test checks that.
 
 | Exploded | Board in the cover, from the back |
 |---|---|
@@ -305,7 +313,7 @@ The tests run:
 - a silkscreen check;
 - the JLC files against the board;
 - live JLC stock for 30 boards;
-- the case fit: board, plugs, screws, openings and the DIN clip;
+- the case fit: the board's path in, board, plugs, screws, openings and the DIN clip;
 - the ESP32 pins in the firmware against the design;
 - ESPHome validating the config, through `esphome` on the PATH, `$ESPHOME_CMD` or `esphome-wsl`
   inside WSL.

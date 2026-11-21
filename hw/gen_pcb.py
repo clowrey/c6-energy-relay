@@ -77,7 +77,9 @@ PLACE = {
     "Q1": (54.5, 41.5, 0), "D2": (54.5, 45.8, 0), "R23": (50.4, 40.5, 0), "R25": (50.4, 42.7, 0),
     "Q2": (70.5, 41.5, 0), "D3": (70.5, 45.8, 0), "R24": (66.4, 40.5, 0), "R26": (66.4, 42.7, 0),
 }
-HOLES = [(3.5, 21.0), (77.0, 37.5), (22.3, 77.5), (28.5, 4.5)]
+# the case's four screws run from the back plate through these holes into the cover, so each screw
+# is reachable from outside: every hole edge keeps 6.5 mm from mains copper (H3 sits nearest, by L_IN)
+HOLES = [(3.5, 21.0), (77.0, 37.5), (21.0, 77.5), (28.5, 4.5)]
 ANTENNA_KEEPOUT = (74.4, 0.0, W, 33.6)          # x0, y0, x1, y1 (y down); = the module footprint's own keep-out
 def _relay_copper(k):
     """COM and NO contact copper for relay k: 5 mm wide, 4 mm apart (the open contact sees line
@@ -94,7 +96,7 @@ for _k in (1, 2):
     _z, _s = _relay_copper(_k)
     RELAY_ZONES.update(_z)
     STITCH.update(_s)
-H3_RING = 4.5   # no copper around H3: its screw sits between L_IN and the CT / ground area
+H3_RING = 4.0   # no copper around H3: its screw sits between L_IN and the CT / ground area
 
 MM = pcbnew.FromMM
 

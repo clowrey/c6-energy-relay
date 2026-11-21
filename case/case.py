@@ -3,14 +3,18 @@
     python case/case.py            # reads hw/out/board_features.json, writes case/out/*.step|stl
 
 Two parts:
-  cover  the front shell: closed front face, four walls, pillars that hold the board. The board is
-         screwed to the pillars from its solder side (4 x M3 x 8, self-tapping into 2.8 mm pilots).
-         Wall openings: the plug row along the bottom edge, USB-C in the top edge, vents.
+  cover  the front shell: closed front face, four walls, a pillar at each of the board's mounting
+         holes. Wall openings: the plug row along the bottom edge, USB-C in the top edge, vents.
   base   the back plate that clips onto a TS35 rail: a fixed hook at the top (68 mm long, 3.5 mm wall,
          2 mm lip over the flange, five ribs behind it) and a sprung latch at the bottom (a 20 mm
          latch block on a 64 mm beam freed by two slots; lever it with a screwdriver in the lower
-         slot to release). Four M3 x 4 screws from the back self-tap into 2.8 mm pilots in the cover's corner
-         bosses.
+         slot to release). A standoff rises from the plate to each mounting hole.
+Four screws hold everything: M3 x 14 countersunk, from the back through the plate, its standoff and
+the board, self-tapping into 2.8 mm pilots in the cover's pillars. The board is clamped between the
+standoffs and the pillars. Nothing inside the walls sits between the board and the open back, so the
+board drops straight in. The screw heads sit flush in the back face; the holes keep 6.5 mm from
+mains copper, so a screw you can touch is as far from mains as the low-voltage side.
+Assembly: cover face down, board in (components down) onto the pillars, base on, four screws.
 Nothing opens on the front face: the status LED shows through a 0.6 mm thin window.
 
 Printing: the base flat on its inside face (clip up), the cover on its front face (walls up). No
@@ -24,8 +28,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from build123d import (Axis, Box, Cylinder, Location, Plane, Polygon, Pos, Rot, RectangleRounded,
-                       export_step, export_stl, extrude)
+from build123d import (Align, Axis, Box, Cone, Cylinder, Location, Plane, Polygon, Pos, Rot,
+                       RectangleRounded, export_step, export_stl, extrude)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -38,13 +42,13 @@ Z_BOARD_TOP = 1.6
 Z_BACK_IN = -4.0              # room behind the board for leads and the board-screw heads
 Z_BACK_OUT = Z_BACK_IN - WALL
 FRONT_CLEAR = 1.5             # above the tallest part
-M3_PILOT_D, M3_PILOT_DEPTH = 2.8, 6.0
+M3_PILOT_D, M3_PILOT_DEPTH = 2.8, 8.0
 M3_LEAD_IN_D, M3_LEAD_IN = 3.4, 0.8
-M3_CLEAR_D, M3_HEAD_D, M3_HEAD_H = 3.4, 6.0, 2.6
-M3_HEAD_RECESS = 1.2          # counterbore depth for the base screws' heads
-BASE_SCREW_LEN = 4.0          # M3 x 4: ends 1 mm short of the board
+M3_CLEAR_D = 3.4
+CSK_D = 6.6                   # 90 degree countersink at the back face (M3 flat head: 5.5-6.0 mm)
+SCREW_LEN = 14.0              # M3 x 14 countersunk, overall length
 PILLAR_D = 6.0
-BOSS_D = 5.8
+STANDOFF_D = 6.0
 LED_WINDOW = 0.6
 
 # TS35 rail: flanges 35 mm apart (outer edges), 1.0 mm thick
@@ -85,31 +89,21 @@ def one_solid(shape):
     return solids[0]
 
 
-def corner_bosses(w, h):
-    # clear of the plugs (bottom), the USB-C (top-left) and the antenna keep-out (top-right)
-    # and >= 6.5 mm (plus the screw's radius) from the relay contact copper, clear of the board-screw
-    # heads
-    return [(0.0, 9.0), (0.0, h - 9.0), (w, 27.0), (w * 0.625, h)]
-
-
 def build_cover(f):
     w, h = f["outline_mm"]
     x0, x1, y0, y1 = -GAP - WALL, w + GAP + WALL, -GAP - WALL, h + GAP + WALL
     shell = slab(x0, x1, y0, y1, Z_BACK_IN, Z_FRONT_OUT, CORNER_R)
     inner = slab(x0 + WALL, x1 - WALL, y0 + WALL, y1 - WALL, Z_BACK_IN - 1, Z_FRONT_IN, max(CORNER_R - WALL, 0.5))
     cover = shell - inner
-    # pillars at the board's mounting holes, pilot from the board side
+    # pillars at the board's mounting holes, pilot from the board side. Nothing else stands inside the
+    # walls behind the board's seat, so the board drops in from the back
     for x, y, _ in f["holes"]:
         cover += cyl(x, y, PILLAR_D, Z_BOARD_TOP, Z_FRONT_IN + 0.5)
         cover -= cyl(x, y, M3_PILOT_D, Z_BOARD_TOP - 0.1, Z_BOARD_TOP + M3_PILOT_DEPTH)
         cover -= cyl(x, y, M3_LEAD_IN_D, Z_BOARD_TOP - 0.1, Z_BOARD_TOP + M3_LEAD_IN)
-    # corner bosses for the base screws (behind the board, below z = -0.6)
-    for x, y in corner_bosses(w, h):
-        cover += cyl(x, y, BOSS_D, Z_BACK_IN, -0.6)
-        cover -= cyl(x, y, M3_PILOT_D, Z_BACK_IN - 0.1, Z_BACK_IN + 3.4)
-    # trim the boss overhang. one_solid: `&` can return a ShapeList, and `ShapeList -= shape` is a
-    # silent no-op (list difference), which once left every opening below uncut
-    cover = one_solid(cover & slab(x0, x1, y0, y1, Z_BACK_IN, Z_FRONT_OUT, CORNER_R))
+    # one_solid: a boolean can return a ShapeList, and `ShapeList -= shape` is a silent no-op (list
+    # difference), which once left every opening below uncut
+    cover = one_solid(cover)
     # openings: plugs (bottom edge) and USB-C (top edge), 1 mm around each envelope
     for c in f["connectors"]:
         ex0, ey0, ez0, ex1, ey1, ez1 = c["plug_envelope"]
@@ -136,10 +130,9 @@ def build_base(f):
     w, h = f["outline_mm"]
     x0, x1, y0, y1 = -GAP - WALL, w + GAP + WALL, -GAP - WALL, h + GAP + WALL
     base = slab(x0, x1, y0, y1, Z_BACK_OUT, Z_BACK_IN, CORNER_R)
-    # screws into the cover's corner bosses: clearance + counterbore from the back
-    for x, y in corner_bosses(w, h):
-        base -= cyl(x, y, M3_CLEAR_D, Z_BACK_OUT - 1, Z_BACK_IN + 1)
-        base -= cyl(x, y, M3_HEAD_D, Z_BACK_OUT - 1, Z_BACK_OUT + M3_HEAD_RECESS)
+    # a standoff up to the board's solder side at each mounting hole
+    for x, y, _ in f["holes"]:
+        base += cyl(x, y, STANDOFF_D, Z_BACK_IN - 0.1, 0.0)
     yc = RAIL_Y
     z_lip0 = Z_BACK_OUT - FLANGE_T - 0.2           # lip's face toward the rail flange
     z_tip = z_lip0 - LIP_T
@@ -164,6 +157,13 @@ def build_base(f):
     # ramp on the lip so the flange pushes the latch aside when the case is rocked onto the rail
     ramp = Pos(w / 2, lt + LIP_W, z_tip) * Rot(45, 0, 0) * Box(lx1 - lx0 + 2, 2.0, 2.0)
     base += lip - ramp
+    # the case screws: clearance hole, flush countersink, and a clear path behind it for the head
+    # (the hook wall ends within reach of H1)
+    for x, y, _ in f["holes"]:
+        base -= cyl(x, y, M3_CLEAR_D, Z_BACK_OUT - 1, 0.1)
+        base -= Pos(x, y, Z_BACK_OUT) * Cone(CSK_D / 2, M3_CLEAR_D / 2, (CSK_D - M3_CLEAR_D) / 2,
+                                             align=(Align.CENTER, Align.CENTER, Align.MIN))
+        base -= cyl(x, y, CSK_D + 0.4, z_tip - 1, Z_BACK_OUT)
     RAIL_PROBE_X = w / 2
     return one_solid(base)
 
