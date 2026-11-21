@@ -1,0 +1,9 @@
+.superpowers/
+__pycache__/
+.pytest_cache/
+hw/datasheets/
+hw/*-backups/
+hw/*.kicad_prl
+hw/fp-info-cache
+hw/out/tmp/
+*.lck
