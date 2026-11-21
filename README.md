@@ -133,8 +133,13 @@ The relay contacts carry up to 10 A on 5 mm wide copper areas on both layers, wi
 opened so they can be tinned thicker. One mounting hole sits between the input and the CT area, so
 it has a copper-free ring: a metal screw there can't bridge ground towards mains.
 
-**Layers.** The board is routed by hand (the tracks are listed in [`hw/routes.py`](hw/routes.py)):
-45° corners, 0.2 mm signal tracks, ground poured on both layers and stitched with vias.
+**Layers.** The board is routed by hand, with every bend rounded into an arc. The tracks are listed
+in [`hw/routes.py`](hw/routes.py), and [`hw/route.py`](hw/route.py) rounds the bends as it lays them:
+1 mm radius on signals, 2.5 × the width on wider tracks. Corners where another branch joins stay
+sharp, so the joint stays connected. Signal tracks are 0.2 mm, and ground is poured on both layers
+and stitched with vias.
+
+<p align="center"><img src="docs/img/layer_detail.png" width="60%" alt="Close-up: rounded tracks from the ESP32-C6 to the GPIO header"></p>
 
 | All copper and top silkscreen | Top copper | Bottom copper |
 |---|---|---|

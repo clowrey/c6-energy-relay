@@ -2,7 +2,8 @@
 
 net -> list of paths {"layer": "F"|"B", "w": mm, "pts": [...], "vias": [...]}. Points are board
 coordinates (mm, origin top-left, y down, as gen_pcb.PLACE) or pad references ("U1", "17").
-Routing style follows the CellKeeper boards: 45-degree corners, 0.2 mm signals, 0.3-0.6 mm power,
+Routing style follows the CellKeeper boards: 45-degree corners as planned here (route.py rounds every
+bend into an arc when it lays the tracks), 0.2 mm signals, 0.3-0.6 mm power,
 0.6/0.3 mm vias, ground poured on both layers. Mains nets stay on the top layer, 1.0 mm (L/N) and
 0.5 mm (divider); relay contacts are copper zones (gen_pcb.RELAY_ZONES).
 """
@@ -80,7 +81,7 @@ t("GND", ("R6", "2"), (6.9, 47.4), (7.6, 46.7), w=0.3, vias=[(7.6, 46.7)])
 t("GND", ("U2", "8"), (11.53, 38.75), w=0.3, vias=[(11.53, 38.75)])
 
 # BL0939 supply, control, test pads, UART
-t("3V3", (23.0, 24.6), (19.2, 24.6), ("R17", "1"), w=0.3)
+t("3V3", (19.2, 24.6), ("R17", "1"), w=0.3)
 t("3V3", (19.2, 24.6), (10.22, 24.6), ("C6", "1"), (10.22, 27.9), ("U2", "1"), w=0.3)
 t("GND", ("C6", "2"), (12.9, 26.0), w=0.3, vias=[(12.9, 26.0)])
 t("SEL", ("U2", "12"), ("R16", "1"))
@@ -160,7 +161,7 @@ t("GND", ("U3", "2"), (43.9, 7.8), w=0.3, vias=[(43.9, 7.8)])
 t("3V3", ("U3", "5"), (45.14, 4.5), ("C10", "1"), (45.45, 0.95), w=0.4)
 t("3V3", ("U1", "3"), (71.2, 4.4), ("C7", "1"), w=0.4)
 t("3V3", ("C7", "1"), (71.6, 3.0), ("C11", "1"), (70.8, 0.95), (45.45, 0.95), w=0.4)
-t("3V3", (45.45, 0.95), (24.3, 0.95), (24.3, 16.5), (23.0, 17.8), (23.0, 24.6), w=0.4)
+t("3V3", (45.45, 0.95), (24.3, 0.95), (24.3, 16.5), (23.0, 17.8), (23.0, 24.6), (19.2, 24.6), w=0.4)
 t("3V3", ("U3", "5"), (46.3, 6.85), (46.3, 29.7), ("J6", "2"), w=0.3)
 t("3V3", ("R18", "1"), (42.5, 0.95), w=0.3)
 t("GND", ("C10", "2"), (48.3, 3.6), w=0.3, vias=[(48.3, 3.6)])

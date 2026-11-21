@@ -123,6 +123,24 @@ def layers(width=1100):
             print(name, framed.size)
 
 
+def detail(width=4400, box=(0.52, 0.04, 0.92, 0.5)):
+    """Close-up of the module fan-out to the GPIO header (box: fractions of the board image)."""
+    from PIL import Image
+    global LAYERS
+    saved, LAYERS = LAYERS, {"layer_detail": "B.Cu,F.Cu,F.Silkscreen,Edge.Cuts"}
+    try:
+        layers(width)
+    finally:
+        LAYERS = saved
+    path = IMG / "layer_detail.png"
+    im = Image.open(path)
+    w, h = im.size
+    im = im.crop((int(w * box[0]), int(h * box[1]), int(w * box[2]), int(h * box[3])))
+    im.thumbnail((900, 1100))
+    im.save(path, optimize=True)
+    print("layer_detail", im.size)
+
+
 # ---------------------------------------------------------------- 3D board
 RENDERS = {  # image -> kicad-cli pcb render arguments (orthographic)
     "board_iso": ["--side", "top", "--rotate", "-55,0,25", "--zoom", "0.85"],
@@ -155,6 +173,7 @@ def main():
         schematic()
     if "layers" in jobs:
         layers()
+        detail()
     if "render" in jobs:
         render()
     if "case" in jobs:

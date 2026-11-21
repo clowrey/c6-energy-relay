@@ -38,6 +38,8 @@ def main(pcb, out):
                        "start": to_board(t.GetStart().x, t.GetStart().y), "end": to_board(t.GetEnd().x, t.GetEnd().y),
                        "bbox": bbox(t), "layer": t.GetLayerName(),
                        "width": (t.GetWidth(pcbnew.F_Cu) if t.GetClass() == "PCB_VIA" else t.GetWidth()) / 1e6})
+        if t.GetClass() == "PCB_ARC":
+            copper[-1]["mid"] = to_board(t.GetMid().x, t.GetMid().y)
     for z in board.Zones():
         if z.GetIsRuleArea():
             continue

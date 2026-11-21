@@ -105,12 +105,32 @@ def test_mains_far_from_holes(board_dump):
                 continue
             if m["kind"] == "PCB_TRACK":
                 d = _seg_dist((h["x"], h["y"]), m["start"], m["end"]) - m["width"] / 2
+            elif m["kind"] == "PCB_ARC":
+                pts = _arc_points(m["start"], m["mid"], m["end"])
+                d = min(_seg_dist((h["x"], h["y"]), a, b) for a, b in zip(pts, pts[1:])) - m["width"] / 2
             else:
                 bx0, by0, bx1, by1 = m["bbox"]
                 dx = max(bx0 - h["x"], 0, h["x"] - bx1)
                 dy = max(by0 - h["y"], 0, h["y"] - by1)
                 d = (dx * dx + dy * dy) ** 0.5
             assert d >= 2.75 + 4.0, (h["ref"], m["net"], round(d, 2))
+
+
+def _arc_points(start, mid, end, n=24):
+    """Points along the circular arc through start, mid and end."""
+    import math
+    (ax, ay), (bx, by), (cx, cy) = start, mid, end
+    d = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by))
+    if abs(d) < 1e-12:
+        return [start, end]
+    ux = ((ax * ax + ay * ay) * (by - cy) + (bx * bx + by * by) * (cy - ay) + (cx * cx + cy * cy) * (ay - by)) / d
+    uy = ((ax * ax + ay * ay) * (cx - bx) + (bx * bx + by * by) * (ax - cx) + (cx * cx + cy * cy) * (bx - ax)) / d
+    r = math.hypot(ax - ux, ay - uy)
+    a0, a1, am = (math.atan2(p[1] - uy, p[0] - ux) for p in (start, end, mid))
+    sweep = (a1 - a0) % (2 * math.pi)
+    if (am - a0) % (2 * math.pi) > sweep:      # the arc runs the other way round
+        sweep -= 2 * math.pi
+    return [(ux + r * math.cos(a0 + sweep * i / n), uy + r * math.sin(a0 + sweep * i / n)) for i in range(n + 1)]
 
 
 def _seg_dist(p, a, b):
@@ -170,6 +190,9 @@ def test_screw_bridge_mains_to_lv(board_dump):
             return min(((p[0] - h["x"]) ** 2 + (p[1] - h["y"]) ** 2) ** 0.5 for p in item["points"])
         if item["kind"] == "PCB_TRACK":
             return _seg_dist((h["x"], h["y"]), item["start"], item["end"]) - item["width"] / 2
+        if item["kind"] == "PCB_ARC":
+            pts = _arc_points(item["start"], item["mid"], item["end"])
+            return min(_seg_dist((h["x"], h["y"]), a, b) for a, b in zip(pts, pts[1:])) - item["width"] / 2
         bx0, by0, bx1, by1 = item["bbox"]
         dx = max(bx0 - h["x"], 0, h["x"] - bx1)
         dy = max(by0 - h["y"], 0, h["y"] - by1)
@@ -188,3 +211,32 @@ def test_silkscreen_readable(drc):
     bad += [v for v in drc["violations"] if v["type"] == "silk_over_copper"
             and any(i["description"].startswith(("PCB text", "Reference field")) for i in v["items"])]
     assert bad == [], _fmt(bad)
+
+
+def test_tracks_rounded(board_dump):
+    """Every bend in a track is an arc: no point where exactly two straight segments of one net meet
+    at an angle, away from pads and vias (junctions of three or more keep their corner)."""
+    import math
+    from collections import defaultdict
+    cu = board_dump["copper"]
+    ends = defaultdict(list)          # (net, layer, x, y) -> [(kind, other end)]
+    vias = {(c["net"], round(c["start"][0], 3), round(c["start"][1], 3)) for c in cu if c["kind"] == "PCB_VIA"}
+    pads = [c for c in cu if c["kind"] == "pad"]
+    for c in cu:
+        if c["kind"] not in ("PCB_TRACK", "PCB_ARC"):
+            continue
+        s, e = c["start"], c["end"]
+        for p, q in ((s, e), (e, s)):
+            ends[(c["net"], c["layer"], round(p[0], 3), round(p[1], 3))].append((c["kind"], q))
+    sharp = []
+    for (net, layer, x, y), items in ends.items():
+        if len(items) != 2 or any(k != "PCB_TRACK" for k, _ in items) or (net, x, y) in vias:
+            continue
+        if any(p["net"] == net and p["bbox"][0] <= x <= p["bbox"][2] and p["bbox"][1] <= y <= p["bbox"][3]
+               for p in pads):
+            continue
+        (_, a), (_, b) = items
+        ang = math.degrees(math.atan2(a[1] - y, a[0] - x) - math.atan2(b[1] - y, b[0] - x)) % 360
+        if abs(ang - 180) > 1:
+            sharp.append((net, layer, x, y, round(ang)))
+    assert sharp == [], f"{len(sharp)} sharp corners, e.g. {sharp[:8]}"

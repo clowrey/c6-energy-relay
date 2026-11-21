@@ -37,24 +37,113 @@ class Resolver:
         return pcbnew.VECTOR2I(MM(OX + pt[0]), MM(OY + pt[1]))
 
 
+def bend_radius(width_mm: float) -> float:
+    """Target radius of a track bend: 1 mm for signals, 2.5 x the width for wider tracks."""
+    return max(1.0, 2.5 * width_mm)
+
+
+def _fillets(pts, width, fixed, max_d=None):
+    """Corner fillets for one polyline (points in nm). fixed[i]: keep corner i sharp (a junction);
+    max_d[i]: the longest tangent allowed at corner i (other copper joins the legs further out).
+    -> {i: (t1, mid, t2)} tangent points and arc midpoint, as float (x, y) in nm."""
+    import math
+    n = len(pts)
+    seg = [math.dist(pts[i], pts[i + 1]) for i in range(n - 1)]
+    plan = {}
+    for i in range(1, n - 1):
+        if fixed[i]:
+            continue
+        p = pts[i]
+        u1 = ((pts[i - 1][0] - p[0]) / seg[i - 1], (pts[i - 1][1] - p[1]) / seg[i - 1])
+        u2 = ((pts[i + 1][0] - p[0]) / seg[i], (pts[i + 1][1] - p[1]) / seg[i])
+        cos_phi = max(-1.0, min(1.0, u1[0] * u2[0] + u1[1] * u2[1]))
+        phi = math.acos(cos_phi)                      # angle between the two legs
+        if phi > math.radians(179):                   # straight through
+            continue
+        tan_half_turn = math.tan((math.pi - phi) / 2)
+        # each leg is shared with the corner at its other end (if that one is rounded too)
+        room1 = seg[i - 1] * (0.5 if i - 1 > 0 and not fixed[i - 1] else 0.9)
+        room2 = seg[i] * (0.5 if i + 1 < n - 1 and not fixed[i + 1] else 0.9)
+        room = min(room1, room2, max_d[i] if max_d else float("inf"))
+        r = min(MM(bend_radius(width)), room / tan_half_turn)
+        d = r * tan_half_turn
+        t1 = (p[0] + u1[0] * d, p[1] + u1[1] * d)
+        t2 = (p[0] + u2[0] * d, p[1] + u2[1] * d)
+        bis = (u1[0] + u2[0], u1[1] + u2[1])
+        bl = math.hypot(*bis)
+        to_mid = r / math.sin(phi / 2) - r            # corner to the arc's midpoint, along the bisector
+        mid = (p[0] + bis[0] / bl * to_mid, p[1] + bis[1] / bl * to_mid)
+        plan[i] = (t1, mid, t2)
+    return plan
+
+
 def add_routes(board, routes):
+    """Tracks as planned in routes.py, with every bend rounded into an arc. Corners where other copper
+    of the net joins (another path's end or vertex, a via, a pad) stay sharp so the joint is kept."""
     nets = board.GetNetsByName()
     res = Resolver(board)
+
+    def key(v):
+        return (v.x, v.y)
+
+    # where each net's paths, vias and pads touch: a corner there is a junction
+    anchors = {}
+    for net_name, paths in routes.items():
+        a = anchors.setdefault(net_name, [])
+        for path in paths:
+            pts = [key(res(p)) for p in path.get("pts", [])]
+            a += [(pts[0], id(path)), (pts[-1], id(path))] if pts else []
+            a += [(q, id(path)) for q in pts[1:-1]]
+            a += [(key(res(v)), None) for v in path.get("vias", [])]
     for net_name, paths in routes.items():
         net = nets[NET(net_name)]
         for path in paths:
             layer, width = path.get("layer", "F"), path.get("w", 0.2)
-            pts = [res(p) for p in path.get("pts", [])]
-            for a, b in zip(pts, pts[1:]):
-                if a == b:
-                    continue
-                t = pcbnew.PCB_TRACK(board)
-                t.SetStart(a)
-                t.SetEnd(b)
-                t.SetWidth(MM(width))
-                t.SetLayer(LAYERS[layer])
-                t.SetNet(net)
-                board.Add(t)
+            raw = path.get("pts", [])
+            pts = []
+            for p, q in zip(raw, [res(p) for p in raw]):
+                if not pts or key(q) != pts[-1][1]:
+                    pts.append((p, key(q)))
+            xy = [q for _, q in pts]
+            import math
+            others = [a for a, owner in anchors[net_name] if owner != id(path)]   # other paths, vias
+            fixed, max_d = [], []
+            for i, (src, q) in enumerate(pts):
+                dists = [math.dist(a, q) for a in others]
+                fixed.append(isinstance(src[0], str) or i in (0, len(pts) - 1) or
+                             any(dd < MM(0.05) for dd in dists))
+                # a branch joining a leg near the bend: the arc must end before it
+                max_d.append(min([dd - MM(width) for dd in dists if dd < MM(3 * bend_radius(width))],
+                                 default=float("inf")))
+            plan = _fillets(xy, width, fixed, max_d)
+
+            def vec(p):
+                return pcbnew.VECTOR2I(int(round(p[0])), int(round(p[1])))
+
+            def add(item):
+                item.SetWidth(MM(width))
+                item.SetLayer(LAYERS[layer])
+                item.SetNet(net)
+                board.Add(item)
+
+            cur = xy[0] if xy else None
+            for i in range(1, len(xy)):
+                end = plan[i][0] if i in plan else xy[i]
+                if vec(cur) != vec(end):
+                    t = pcbnew.PCB_TRACK(board)
+                    t.SetStart(vec(cur))
+                    t.SetEnd(vec(end))
+                    add(t)
+                if i in plan:
+                    t1, mid, t2 = plan[i]
+                    arc = pcbnew.PCB_ARC(board)
+                    arc.SetStart(vec(t1))
+                    arc.SetMid(vec(mid))
+                    arc.SetEnd(vec(t2))
+                    add(arc)
+                    cur = t2
+                else:
+                    cur = xy[i]
             size, drill = path.get("via", (0.6, 0.3))
             for v in path.get("vias", []):
                 via = pcbnew.PCB_VIA(board)
