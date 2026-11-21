@@ -7,3 +7,6 @@ hw/*.kicad_prl
 hw/fp-info-cache
 hw/out/tmp/
 *.lck
+firmware/.validate/
+firmware/.esphome/
+firmware/secrets.yaml
