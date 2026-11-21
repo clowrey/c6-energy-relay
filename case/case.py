@@ -6,9 +6,10 @@ Two parts:
   cover  the front shell: closed front face, four walls, pillars that hold the board. The board is
          screwed to the pillars from its solder side (4 x M3 x 8, self-tapping into 2.8 mm pilots).
          Wall openings: the plug row along the bottom edge, USB-C in the top edge, vents.
-  base   the back plate that clips onto a TS35 rail: a fixed hook at the top and a sprung latch at the
-         bottom (a 50 mm beam freed by two slots; lever it with a screwdriver in the lower slot to
-         release). Four M3 x 4 screws from the back self-tap into 2.8 mm pilots in the cover's corner
+  base   the back plate that clips onto a TS35 rail: a fixed hook at the top (68 mm long, 3.5 mm wall,
+         2 mm lip over the flange, five ribs behind it) and a sprung latch at the bottom (a 20 mm
+         latch block on a 64 mm beam freed by two slots; lever it with a screwdriver in the lower
+         slot to release). Four M3 x 4 screws from the back self-tap into 2.8 mm pilots in the cover's corner
          bosses.
 Nothing opens on the front face: the status LED shows through a 0.6 mm thin window.
 
@@ -23,8 +24,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from build123d import (Axis, Box, Cylinder, Location, Plane, Pos, Rot, RectangleRounded, export_step,
-                       export_stl, extrude)
+from build123d import (Axis, Box, Cylinder, Location, Plane, Polygon, Pos, Rot, RectangleRounded,
+                       export_step, export_stl, extrude)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -49,8 +50,14 @@ LED_WINDOW = 0.6
 # TS35 rail: flanges 35 mm apart (outer edges), 1.0 mm thick
 RAIL_SPAN = 35.2              # hook face to latch face
 FLANGE_T = 1.0
-LIP_T, LIP_W = 1.5, 1.5       # lip thickness (z) and reach over the flange (y)
-HOOK_W = 2.5                  # hook / latch wall thickness (y)
+LIP_T, LIP_W = 2.2, 2.0       # lip thickness (z) and reach over the flange (y; the flange is 5 mm)
+HOOK_W = 3.5                  # hook / latch wall thickness (y)
+HOOK_LEN = 68.0               # hook length along the rail, centred
+HOOK_GUSSETS = (10.0, 25.0, 40.0, 55.0, 70.0)   # x of the ribs behind the hook
+GUSSET_T, GUSSET_L = 2.0, 4.0
+LATCH_W = 20.0                # latch block width along the rail
+BEAM_L = 64.0                 # sprung beam length between the slot ends: releasing it strains
+                              # PETG 12 * (LIP_W + 0.2) * WALL / BEAM_L^2 = 1.4 %
 
 # filled in by build_case() from the board features
 RAIL_Y = 0.0
@@ -138,19 +145,24 @@ def build_base(f):
     z_tip = z_lip0 - LIP_T
     # fixed hook at the top: wall + lip reaching down over the upper flange
     ht = yc + RAIL_SPAN / 2
-    hx0, hx1 = 12.0, w - 12.0
+    hx0, hx1 = w / 2 - HOOK_LEN / 2, w / 2 + HOOK_LEN / 2
     base += box(hx0, hx1, ht, ht + HOOK_W, z_tip, Z_BACK_OUT)
     base += box(hx0, hx1, ht - LIP_W, ht, z_tip, z_lip0)
-    # sprung latch at the bottom: a 50 mm beam between two through-slots, latch block at its middle
+    # triangular ribs behind the hook wall, down to the plate: the hook can't fold back off the rail
+    yw = ht + HOOK_W
+    for gx in HOOK_GUSSETS:
+        tri = Polygon((yw - 0.1, z_tip), (yw - 0.1, Z_BACK_OUT + 0.1), (yw + GUSSET_L, Z_BACK_OUT + 0.1), align=None)
+        base += extrude(Plane.YZ.offset(gx) * tri, GUSSET_T / 2, both=True)
+    # sprung latch at the bottom: a beam between two through-slots, latch block at its middle
     lt = yc - RAIL_SPAN / 2
-    bx0, bx1 = w / 2 - 25.0, w / 2 + 25.0
+    bx0, bx1 = w / 2 - BEAM_L / 2, w / 2 + BEAM_L / 2
     base -= box(bx0, bx1, lt - HOOK_W - 2.4, lt - HOOK_W - 1.2, Z_BACK_OUT - 1, Z_BACK_IN + 1)   # lower slot
     base -= box(bx0, bx1, lt + LIP_W + 0.4, lt + LIP_W + 1.6, Z_BACK_OUT - 1, Z_BACK_IN + 1)     # upper slot
-    lx0, lx1 = w / 2 - 6.0, w / 2 + 6.0
+    lx0, lx1 = w / 2 - LATCH_W / 2, w / 2 + LATCH_W / 2
     base += box(lx0, lx1, lt - HOOK_W, lt, z_tip, Z_BACK_OUT)
     lip = box(lx0, lx1, lt, lt + LIP_W, z_tip, z_lip0)
     # ramp on the lip so the flange pushes the latch aside when the case is rocked onto the rail
-    ramp = Pos(w / 2, lt + LIP_W, z_tip) * Rot(45, 0, 0) * Box(lx1 - lx0 + 2, 1.5, 1.5)
+    ramp = Pos(w / 2, lt + LIP_W, z_tip) * Rot(45, 0, 0) * Box(lx1 - lx0 + 2, 2.0, 2.0)
     base += lip - ramp
     RAIL_PROBE_X = w / 2
     return one_solid(base)

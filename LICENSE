@@ -1,0 +1,16 @@
+C6 Energy Relay
+Copyright (c) 2026 Chester (github.com/clowrey)
+
+This project is released under two licences:
+
+Hardware: CERN-OHL-P-2.0 (CERN Open Hardware Licence Version 2 - Permissive)
+  The circuit board and the case: everything in hw/ and case/, including the
+  scripts there that generate the schematic, board, libraries, JLC files and
+  case, and the images in docs/img/. Full text: LICENSES/CERN-OHL-P-2.0.txt
+
+Software: MIT
+  The ESPHome firmware config (firmware/), the tests (tests/) and the image
+  scripts (docs/*.py). Full text: LICENSES/MIT.txt
+
+Both licences come with NO WARRANTY. This hardware connects to mains voltage;
+building, installing or using it is at your own risk.

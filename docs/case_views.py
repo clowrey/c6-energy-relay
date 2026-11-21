@@ -199,6 +199,10 @@ def case_views(img: Path):
         acts = [shape_actor(cover, COVER), shape_actor(base, BASE), shape_actor(rail, RAIL)]
         render(centred(acts), img / "case_din.png", direction=(0.6, -0.55, -1.0), zoom=1.0)
 
+        # 5. the base alone, from the back and the side: hook, its ribs, the latch on its sprung beam
+        render(centred([shape_actor(base, (0.55, 0.6, 0.68))]), img / "case_clip.png", direction=(-1.0, 0.45, -0.75),
+               zoom=1.0)
+
 
 if __name__ == "__main__":
     out = ROOT / "docs" / "img"

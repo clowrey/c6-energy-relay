@@ -122,3 +122,25 @@ def test_screws_fit(parts):
         head = Pos(x, y, -1.2) * Cylinder(2.8, 2.4)
         for p in parts:
             assert _overlap(p, head) < 0.01, ((x, y), _overlap(p, head))
+
+
+def test_din_clip_strong(parts):
+    """A clip that holds: thick hook and latch walls, lips that reach well over the flange, a wide
+    latch block, gussets behind the hook, and a latch beam long enough that releasing it (bending it
+    by the lip's reach) strains the PETG well under its ~3 % yield (fixed-fixed beam: 12 d t / L^2)."""
+    base, _ = parts
+    assert case.HOOK_W >= 3.5 and case.LIP_W >= 2.0 and case.LIP_T >= 2.0
+    assert case.HOOK_LEN >= 60 and case.LATCH_W >= 20
+    release = case.LIP_W + 0.2
+    assert 12 * release * case.WALL / case.BEAM_L ** 2 <= 0.015
+    yc, x = case.RAIL_Y, case.RAIL_PROBE_X
+    ht = yc + case.RAIL_SPAN / 2
+    z_tip = case.Z_BACK_OUT - case.FLANGE_T - 0.2 - case.LIP_T
+    # hook lip at full reach and thickness, gusset behind the hook wall
+    assert base.is_inside(Vector(x, ht - case.LIP_W + 0.2, z_tip + 0.2))
+    gx = case.HOOK_GUSSETS[0]
+    assert base.is_inside(Vector(gx, ht + case.HOOK_W + 0.5, case.Z_BACK_OUT - 0.5))
+    # latch lip across its full width
+    lt = yc - case.RAIL_SPAN / 2
+    for dx in (-case.LATCH_W / 2 + 0.5, case.LATCH_W / 2 - 0.5):
+        assert base.is_inside(Vector(x + dx, lt + 0.5, z_tip + 1.0))

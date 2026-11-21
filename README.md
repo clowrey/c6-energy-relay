@@ -30,7 +30,7 @@ contactor coils). It is designed for JLCPCB to build fully assembled. It sits on
 
 **Contents:** [How it works](#how-it-works) · [Schematic](#schematic) · [Circuit board](#circuit-board) ·
 [Case](#case) · [Safety](#safety) · [Wiring](#wiring) · [Firmware](#firmware) ·
-[Ordering](#ordering-at-jlcpcb) · [Building from source](#building-it-from-source)
+[Ordering](#ordering-at-jlcpcb) · [Building from source](#building-it-from-source) · [Licence](#licence)
 
 ## How it works
 
@@ -155,13 +155,22 @@ Two printed parts, built in build123d from the board's own dimensions ([`case/ca
   (4 × M3 × 8, self-tapping into 2.8 mm pilot holes, no inserts). The plugs stick out through
   openings in the bottom wall and USB-C through the top. There are vents over the power module and
   beside the relays. The front face is closed; the status LED shows through a 0.6 mm thin window.
-- **Base:** the back plate, which clips onto a TS35 DIN rail: a fixed hook at the top and a sprung
-  latch at the bottom. To take it off the rail, lever the latch down with a screwdriver in the lower
-  slot. Four M3 × 4 screws hold it to the cover from the back.
+- **Base:** the back plate, which clips onto a TS35 DIN rail. Four M3 × 4 screws hold it to the
+  cover from the back.
+  - **Hook (top):** 68 mm long, with a 3.5 mm thick wall and a 2.2 mm thick lip that reaches 2 mm
+    over the rail's flange. Five ribs behind the wall stop it bending back off the rail.
+  - **Latch (bottom):** a 20 mm wide block with the same wall and lip, on a 64 mm sprung beam.
+    The beam is long so it can flex far enough to clear the flange while staying at about half of
+    PETG's yield strain. That way it doesn't crack after a few cycles.
+  - **To take it off the rail,** lever the latch down with a screwdriver in the lower slot.
 
-| Exploded | Board in the cover, from the back | On a DIN rail, from the back |
-|---|---|---|
-| ![Exploded](docs/img/case_exploded.png) | ![Board in the cover](docs/img/case_inside.png) | ![On a DIN rail](docs/img/case_din.png) |
+| Exploded | Board in the cover, from the back |
+|---|---|
+| ![Exploded](docs/img/case_exploded.png) | ![Board in the cover](docs/img/case_inside.png) |
+
+| On a DIN rail, from the back | The DIN clip: ribbed hook (top), latch on its sprung beam (bottom) |
+|---|---|
+| ![On a DIN rail](docs/img/case_din.png) | ![DIN clip](docs/img/case_clip.png) |
 
 Print in PETG (the latch has to flex): 0.2 mm layers, 3 walls, no supports. Print the base flat on
 its inside face with the clip up, and the cover on its front face. STEP files and print-oriented
@@ -308,3 +317,13 @@ two files.
 | `firmware/` | ESPHome config |
 | `docs/` | the scripts that make the README images, and the images |
 | `tests/` | pytest checks for all of the above |
+
+## Licence
+
+- **Hardware** (the circuit board and the case: everything in `hw/` and `case/`, including the scripts
+  that generate them, and the images): [CERN-OHL-P-2.0](LICENSES/CERN-OHL-P-2.0.txt), the permissive
+  CERN Open Hardware Licence.
+- **Software** (the ESPHome config, the tests and the image scripts): [MIT](LICENSES/MIT.txt).
+
+See [`LICENSE`](LICENSE). Both come with no warranty. This board connects to mains, so building,
+installing and using it is at your own risk.
