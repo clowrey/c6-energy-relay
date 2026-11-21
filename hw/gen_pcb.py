@@ -324,6 +324,10 @@ def build() -> pcbnew.BOARD:
                 fp.GetField(key).SetVisible(False)
         if c.ref in ("J5", "J6"):
             fp.SetLocalZoneConnection(pcbnew.ZONE_CONNECTION_FULL)
+        if c.ref == "J6":       # the pin labels frame the header; its outline would cross them
+            for it in list(fp.GraphicalItems()):
+                if it.GetLayer() == pcbnew.F_SilkS:
+                    fp.Remove(it)
         attrs = fp.GetAttributes()
         if c.dnp:
             attrs |= pcbnew.FP_EXCLUDE_FROM_BOM | pcbnew.FP_EXCLUDE_FROM_POS_FILES | pcbnew.FP_DNP
@@ -384,16 +388,108 @@ def build() -> pcbnew.BOARD:
             via(board, nets[net], x, y, size=1.2, drill=0.6)
 
     silkscreen(board)
+    place_references(board)
     return board
+
+
+SILK_GAP = 0.2          # silk to silk, silk to pads
+
+
+def _silk_obstacles(board, skip=None):
+    """Shapes a silkscreen label must not touch: other silk (footprint graphics, board text, labels
+    already placed), every pad and hole (JLC clips silk off copper), the board edge."""
+    shapes = []
+    for d in board.Drawings():
+        if d.GetLayer() in (pcbnew.F_SilkS, pcbnew.Edge_Cuts) and (skip is None or d.m_Uuid != skip.m_Uuid):
+            shapes.append(d.GetEffectiveShape())
+    for fp in board.GetFootprints():
+        for it in fp.GraphicalItems():
+            # footprint graphics (the reference is a field) and footprint cut-outs (terminal slots)
+            if it.GetLayer() in (pcbnew.F_SilkS, pcbnew.Edge_Cuts):
+                shapes.append(it.GetEffectiveShape())
+        for pad in fp.Pads():
+            shapes.append(pad.GetEffectiveShape(pcbnew.F_Cu))
+            if pad.GetDrillSizeX():
+                shapes.append(pad.GetEffectiveHoleShape())
+    return shapes
+
+
+def _clear(item, obstacles, gap=SILK_GAP, margin=0.5):
+    bb = item.GetBoundingBox()
+    if bb.GetLeft() < MM(OX + margin) or bb.GetRight() > MM(OX + W - margin)             or bb.GetTop() < MM(OY + margin) or bb.GetBottom() > MM(OY + H - margin):
+        return False
+    me = item.GetEffectiveShape()
+    return not any(me.Collide(o, MM(gap)) for o in obstacles)
+
+
+def place_references(board):
+    """Move each visible reference designator to the first spot next to its part where it touches no
+    other silk, pad or the board edge (KiCad's silk_overlap / silk_over_copper / silk_edge rules);
+    hide it if there is none. Labels placed earlier count as obstacles for later ones."""
+    fps = sorted((fp for fp in board.GetFootprints() if fp.Reference().IsVisible()),
+                 key=lambda f: f.GetBoundingBox(False).GetArea())
+    obstacles = _silk_obstacles(board)
+    placed = []
+    hidden = []
+    for fp in fps:
+        ref = fp.Reference()
+        if _clear(ref, obstacles + placed):
+            placed.append(ref.GetEffectiveShape())
+            continue
+        bb = fp.GetBoundingBox(False)           # pads and graphics, not the texts
+        cx, cy = bb.GetCenter().x, bb.GetCenter().y
+        hw, hh = bb.GetWidth() / 2, bb.GetHeight() / 2
+        ok = False
+        for d in (0.1, 0.4, 0.8, 1.3, 2.0):
+            gap = MM(d + 0.5)
+            spots = [(cx, cy - hh - gap, 0), (cx, cy + hh + gap, 0), (cx - hw - gap, cy, 90), (cx + hw + gap, cy, 90),
+                     (cx - hw - gap - MM(0.8), cy, 0), (cx + hw + gap + MM(0.8), cy, 0),
+                     (cx - hw, cy - hh - gap, 0), (cx + hw, cy - hh - gap, 0),
+                     (cx - hw, cy + hh + gap, 0), (cx + hw, cy + hh + gap, 0)]
+            for x, y, rot in spots:
+                ref.SetTextAngleDegrees(rot)
+                ref.SetPosition(pcbnew.VECTOR2I(int(x), int(y)))
+                if _clear(ref, obstacles + placed):
+                    ok = True
+                    break
+            if ok:
+                break
+        if ok:
+            placed.append(ref.GetEffectiveShape())
+        else:
+            ref.SetVisible(False)
+            hidden.append(fp.GetReference())
+    if hidden:
+        print("references hidden (no free spot):", ", ".join(sorted(hidden)))
 
 
 def silkscreen(board):
     B = pcbnew.B_SilkS
-    text(board, "C6 ENERGY RELAY v1.0", 32.0, 11.6, 1.0, bold=True)
+    title = text(board, "C6 ENERGY RELAY v1.0", 32.0, 11.6, 1.0, bold=True)
+    obstacles = _silk_obstacles(board, skip=title)
+    spots = [(size, 31.0 + 0.5 * i, 11.6) for size in (1.0, 0.9, 0.8) for i in range(7)]
+    for size, x, y in spots:
+        title.SetTextSize(pcbnew.VECTOR2I(MM(size), MM(size)))
+        title.SetTextThickness(MM(size * 0.2))
+        title.SetPosition(P(x, y))
+        if _clear(title, obstacles):
+            break
+    else:
+        raise AssertionError("no free spot for the board title")
     text(board, "MAINS 100-240V~", 45.6, 72.6, 0.9, rot=90, bold=True)
     # the bottom side under the mains area is bare, so the full warning goes there
-    text(board, "DANGER: MAINS VOLTAGE", 34.0, 57.5, 1.5, layer=B, bold=True)
-    text(board, "keep 6.5 mm clear, no metal near", 34.0, 60.0, 1.0, layer=B)
+    warn = text(board, "DANGER: MAINS VOLTAGE", 34.0, 57.5, 1.5, layer=B, bold=True)
+    keep = text(board, "keep 6.5 mm clear, no metal near", 34.0, 60.0, 1.0, layer=B)
+    pads = [p.GetEffectiveShape(pcbnew.F_Cu) for fp in board.GetFootprints() for p in fp.Pads()
+            if p.GetAttribute() == pcbnew.PAD_ATTRIB_PTH]
+    pads += [d.GetEffectiveShape() for d in board.Drawings() if d.GetLayer() == pcbnew.B_Mask]  # relay contacts
+    for x, y in ((34.0, 60.3), (33.0, 60.3), (32.4, 60.3), (32.4, 60.8)):   # below the MOV and T1 pads
+        warn.SetPosition(P(x, y))
+        keep.SetPosition(P(x, y + 2.5))
+        if _clear(warn, pads) and _clear(keep, pads):
+            break
+    else:
+        raise AssertionError("no free spot for the mains warning")
     text(board, "C6 ENERGY RELAY v1.0", 40.0, 26.0, 1.5, layer=B, bold=True)
     text(board, "USB-C: power and flashing (isolated from mains)", 40.0, 29.0, 1.0, layer=B)
     # terminal names on the bottom silk (the header bodies cover the top side) and short ones on top
@@ -414,13 +510,14 @@ def silkscreen(board):
     for i, net in enumerate(design.HEADER_PINS):
         col, row = divmod(i, 2)
         x = x0 + col * 2.54
-        lab = net.replace("IO", "") + ("*" if net in strap else "")
-        if row == 0:
-            text(board, lab, x, y0 + 1.75, 0.6)
-        else:
-            text(board, lab, x, y0 - 2.54 - 1.6, 0.6)
-    text(board, "GPIO   * = strapping pin", 50.5, 36.2, 0.6)
-    text(board, "EN", PLACE["SW1"][0], PLACE["SW1"][1] - 3.6, 0.8)
+        lab = net.replace("IO", "").replace("+5V", "5V") + ("*" if net in strap else "")
+        t = text(board, lab, x, y0 + 1.6 if row == 0 else y0 - 2.54 - 1.85, 0.8)
+        if col == 0:            # first column: left-aligned, clear of PS1's outline on the left
+            t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT)
+            t.SetPosition(P(x - 0.75, t.GetPosition().y / 1e6 - OY))
+    t = text(board, "GPIO   * = strapping pin", x0 - 0.75, 38.5, 0.8)
+    t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT)
+    text(board, "EN", PLACE["SW1"][0], PLACE["SW1"][1] + 3.6, 0.8)
     text(board, "BOOT", PLACE["SW2"][0], PLACE["SW2"][1] + 3.6, 0.8)
 
 

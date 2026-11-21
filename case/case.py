@@ -21,7 +21,6 @@ face, +z toward the front; the same frame as `kicad-cli pcb export step --drill-
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 from build123d import (Axis, Box, Cylinder, Location, Plane, Pos, Rot, RectangleRounded, export_step,
@@ -101,7 +100,9 @@ def build_cover(f):
     for x, y in corner_bosses(w, h):
         cover += cyl(x, y, BOSS_D, Z_BACK_IN, -0.6)
         cover -= cyl(x, y, M3_PILOT_D, Z_BACK_IN - 0.1, Z_BACK_IN + 3.4)
-    cover = cover & slab(x0, x1, y0, y1, Z_BACK_IN, Z_FRONT_OUT, CORNER_R)   # trim boss overhang
+    # trim the boss overhang. one_solid: `&` can return a ShapeList, and `ShapeList -= shape` is a
+    # silent no-op (list difference), which once left every opening below uncut
+    cover = one_solid(cover & slab(x0, x1, y0, y1, Z_BACK_IN, Z_FRONT_OUT, CORNER_R))
     # openings: plugs (bottom edge) and USB-C (top edge), 1 mm around each envelope
     for c in f["connectors"]:
         ex0, ey0, ez0, ex1, ey1, ez1 = c["plug_envelope"]
@@ -171,33 +172,6 @@ def board_to_case(shape):
     return shape
 
 
-def preview(parts, path, board=None):
-    """Exploded view PNG (matplotlib): base, board, cover from the front-left-below."""
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-
-    fig = plt.figure(figsize=(9, 9), dpi=110)
-    ax = fig.add_subplot(projection="3d")
-    shift = {"base": -25.0, "board": 0.0, "cover": 25.0}
-    colours = {"base": "#4a6fa5", "board": "#2e7d32", "cover": "#d9d9d9"}
-    for name, shape in parts:
-        verts, tris = shape.tessellate(0.3, 0.5)
-        pts = [(v.X, v.Y, v.Z + shift[name]) for v in verts]
-        polys = [[pts[i] for i in t] for t in tris]
-        ax.add_collection3d(Poly3DCollection(polys, facecolors=colours[name], edgecolors=colours[name], linewidths=0, alpha=0.95,
-                                             shade=True))
-    ax.set_xlim(-5, 85)
-    ax.set_ylim(-25, 85)
-    ax.set_zlim(-40, 55)
-    ax.set_box_aspect((90, 110, 95))
-    ax.view_init(elev=14, azim=-72)
-    ax.set_axis_off()
-    fig.savefig(path, bbox_inches="tight")
-    plt.close(fig)
-
-
 def main():
     features = json.loads((ROOT / "hw" / "out" / "board_features.json").read_text())
     base, cover = build_case(features)
@@ -208,11 +182,6 @@ def main():
     export_stl(Rot(180, 0, 0) * base, str(OUT / "base.stl"))
     export_stl(Rot(180, 0, 0) * cover, str(OUT / "cover.stl"))
     print("base", round(base.volume / 1000, 1), "cm3; cover", round(cover.volume / 1000, 1), "cm3")
-    if "--preview" in sys.argv:
-        from build123d import import_step
-        board = import_step(str(ROOT / "hw" / "out" / "board.step"))
-        preview([("base", base), ("board", board), ("cover", cover)], OUT / "preview.png")
-        print("wrote", OUT / "preview.png")
 
 
 if __name__ == "__main__":

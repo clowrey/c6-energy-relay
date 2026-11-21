@@ -1,5 +1,7 @@
 """ESPHome starter config: pins agree with hw/design.py, and ESPHome accepts it."""
+import os
 import re
+import shlex
 import shutil
 import subprocess
 from pathlib import Path
@@ -10,7 +12,18 @@ from conftest import ROOT
 from hw import design
 
 YAML = ROOT / "firmware" / "c6-energy-relay.yaml"
-ESPHOME_WSL = "/home/devcontainers/.local/bin/esphome-wsl"
+
+
+def _esphome():
+    """How to run ESPHome here: $ESPHOME_CMD, else `esphome` on PATH, else `esphome-wsl` inside WSL
+    (a wrapper on the WSL user's PATH). None: skip the check."""
+    if os.environ.get("ESPHOME_CMD"):
+        return shlex.split(os.environ["ESPHOME_CMD"]), False
+    if shutil.which("esphome"):
+        return ["esphome"], False
+    if shutil.which("wsl"):
+        return ["wsl", "-d", os.environ.get("ESPHOME_WSL_DISTRO", "Ubuntu"), "-e", "bash", "-lc"], True
+    return None, False
 
 
 def _pin(key):
@@ -29,8 +42,10 @@ def test_pins_match_design():
     assert "baud_rate: 4800" in text
 
 
-@pytest.mark.skipif(shutil.which("wsl") is None, reason="WSL not available")
 def test_esphome_config_valid(tmp_path):
+    cmd, in_wsl = _esphome()
+    if cmd is None:
+        pytest.skip("ESPHome not found (set ESPHOME_CMD)")
     work = ROOT / "firmware" / ".validate"
     work.mkdir(exist_ok=True)
     try:
@@ -38,10 +53,15 @@ def test_esphome_config_valid(tmp_path):
         (work / "secrets.yaml").write_text('wifi_ssid: "test"\nwifi_password: "testtest"\n'
                                            'api_key: "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI="\n'
                                            'ota_password: "test"\nap_password: "testtest"\n')
-        wpath = "/mnt/" + str(work / YAML.name).replace(":", "").replace("\\", "/")
-        wpath = wpath[:5] + wpath[5].lower() + wpath[6:]
-        r = subprocess.run(["wsl", "-d", "Ubuntu", "-e", ESPHOME_WSL, "config", wpath],
-                           capture_output=True, text=True, timeout=600)
+        if in_wsl:
+            wpath = "/mnt/" + str(work / YAML.name).replace(":", "").replace("\\", "/")
+            wpath = wpath[:5] + wpath[5].lower() + wpath[6:]
+            args = cmd + [f"esphome-wsl config '{wpath}'"]
+        else:
+            args = cmd + ["config", str(work / YAML.name)]
+        r = subprocess.run(args, capture_output=True, text=True, timeout=600)
+        if in_wsl and r.returncode == 127:
+            pytest.skip("esphome-wsl not found in WSL (set ESPHOME_CMD)")
         assert r.returncode == 0, (r.stdout[-3000:] + r.stderr[-3000:])
     finally:
         shutil.rmtree(work, ignore_errors=True)

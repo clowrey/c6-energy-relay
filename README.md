@@ -1,93 +1,248 @@
 # C6 Energy Relay
 
-A Wi-Fi AC energy meter with two relays, for Home Assistant through ESPHome. It measures line voltage
-and two CT-clamp currents (BL0939), switches two loads or two contactor coils (16 A relays, 10 A use),
-and is built fully assembled by JLCPCB. It mounts on a DIN rail in a 3D-printed case inside a plastic
-junction box.
+A Wi-Fi energy meter with two relays, for Home Assistant through ESPHome. It measures the line
+voltage and two CT-clamp currents, reports power and energy for each, and switches two loads (or two
+contactor coils). It is designed for JLCPCB to build fully assembled. It sits on a DIN rail in a
+3D-printed case, inside a plastic junction box.
 
-![Board, 3D view](hw/out/renders/iso.png)
+<p align="center">
+  <img src="docs/img/board_iso.png" width="56%" alt="The assembled board, 3D render">
+  <img src="docs/img/case_front.png" width="34%" alt="The board in its DIN-rail case">
+</p>
+
+> **Status:** the design is finished and checked by its own tests (KiCad ERC and DRC with creepage
+> rules, schematic parity, JLC files, case fit, ESPHome config). No boards have been made or tested
+> yet. Treat it as an untested design: check it yourself before you build one and connect it to
+> mains.
 
 | | |
 |---|---|
-| MCU | ESP32-C6-MINI-1-N4 (Wi-Fi 6, BLE, Thread/Zigbee capable), PCB antenna |
-| Metering | BL0939 on UART (GPIO16/17, 4800 baud): voltage, 2 x current, 2 x power, energy |
-| Voltage sense | ZMPT107-1 current transformer, 5 x 22 k from the line, 22 R load |
-| Current sense | 2 CT clamps with bare leads (100 A : 50 mA type), 0.6 R burden each |
-| Relays | 2 x Hongfa HF32FV-16 (16 A SPST-NO), use up to 10 A; dry contacts |
-| Supply | HLK-PM01 isolated 5 V 600 mA (100-240 V), or USB-C on the bench |
-| Board | 80 x 80 mm, 2 layers, all parts on top |
-| Terminals | pluggable: 3 x 5.08 mm 15 A (mains, relay 1, relay 2), 1 x 3.81 mm 4-pole (CTs) |
-| GPIO | every unused GPIO on a 2 x 9 header footprint (holes only) |
+| MCU | ESP32-C6-MINI-1-N4: Wi-Fi 6, BLE, 802.15.4 (Thread/Zigbee capable), PCB antenna |
+| Metering | BL0939 on UART: voltage, 2 × current, 2 × active power, 2 × energy |
+| Voltage sense | ZMPT107-1 current-type transformer, fed through 5 × 22 kΩ from the line |
+| Current sense | 2 CT clamps with bare leads (100 A : 50 mA type, e.g. SCT-013-000), 0.6 Ω burden each |
+| Relays | 2 × Hongfa HF32FV-16 (16 A SPST-NO), dry contacts, for loads up to 10 A |
+| Supply | 100–240 V AC: 120 V line–neutral or 240 V leg–leg, chosen at install. HLK-PM01 isolated 5 V, or USB-C on the bench |
+| Terminals | all pluggable: 3 × 5.08 mm 15 A (mains in, relay 1, relay 2), 1 × 3.81 mm 4-pole (CTs) |
+| GPIO | every unused GPIO on a 2 × 9 header footprint (holes only, nothing fitted) |
+| Board | 80 × 80 mm, 2 layers, every part on the top side |
+| Cost | about $15.70 a board for 30, $12.10 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
+
+**Contents:** [How it works](#how-it-works) · [Schematic](#schematic) · [Circuit board](#circuit-board) ·
+[Case](#case) · [Safety](#safety) · [Wiring](#wiring) · [Firmware](#firmware) ·
+[Ordering](#ordering-at-jlcpcb) · [Building from source](#building-it-from-source)
+
+## How it works
+
+<p align="center"><img src="docs/img/block-diagram.svg" width="100%" alt="Block diagram"></p>
+
+Everything that touches mains is on the left, and everything you can touch (USB-C, the CT terminal,
+the GPIO header) is on the right. Three parts bridge the two sides, and each is rated for it: the
+HLK-PM01 power module, the ZMPT107-1 voltage transformer and the relays (coil to contact). On the
+board the two sides are kept 6.5 mm apart.
+
+- **Power:** the mains input goes through a 10 Ω fusible resistor in **each** line, so a 240 V leg–leg
+  install is fused on both legs. A 10D561K varistor (MOV) clamps surges after the fuses. The potted
+  HLK-PM01 makes an isolated 5 V, 600 mA. On the bench, USB-C powers the board through an SS14 diode
+  instead. An AP2112K LDO makes 3.3 V for the ESP32 and the BL0939; its low dropout keeps it
+  regulating from USB minus the diode.
+- **Voltage:** five 22 kΩ resistors in series feed about 2 mA from the line into the ZMPT107-1, a
+  2 mA : 2 mA current transformer. Its secondary drives a 22 Ω load, and the BL0939 reads that
+  voltage on VP. At 120 V the signal is half the 240 V one; calibration covers both.
+- **Current:** each CT clamp (50 mA at 100 A) works into a 0.6 Ω burden (two 0.3 Ω 1 % resistors,
+  centre to ground), then ferrite beads and a 1 kΩ / 33 nF filter into the BL0939. This is the same
+  front end as Seeed's XIAO 2-channel energy meter, whose calibration it shares.
+- **Metering:** the BL0939 measures continuously and sends readings over UART (GPIO16/17, 4800 baud)
+  to the ESP32-C6, which runs ESPHome and reports to Home Assistant.
+- **Relays:** each relay coil runs from 5 V through an MMBT3904 transistor (1 kΩ base resistor,
+  10 kΩ pull-down so it stays off while the ESP32 boots) with a 1N4148W flyback diode. GPIO22 and
+  GPIO23 drive them. The contacts are dry: COM and NO go to their own terminal and switch whatever
+  you wire through them.
+- **USB-C** goes straight to the ESP32-C6's native USB (GPIO12/13, with a USBLC6-2SC6 ESD protector),
+  for flashing and logs without a USB-serial chip or buttons.
+
+## Schematic
+
+The full schematic is in [`hw/out/schematic.pdf`](hw/out/schematic.pdf) (KiCad 10:
+[`hw/c6-energy-relay.kicad_sch`](hw/c6-energy-relay.kicad_sch)). It is generated from
+[`hw/design.py`](hw/design.py), one functional block per section, and every pin connects by a net
+label.
+
+[![Schematic overview](docs/img/schematic.png)](hw/out/schematic.pdf)
+
+<details>
+<summary><b>Each section, larger</b></summary>
+
+**Mains input, fuses, MOV and the isolated 5 V supply**
+
+![Mains input](docs/img/sch_mains.png)
+
+**Voltage sense:** the divider into the ZMPT107-1, and its 22 Ω load
+
+![Voltage sense](docs/img/sch_vsense.png)
+
+**BL0939 metering and the CT inputs**
+
+![Metering](docs/img/sch_metering.png)
+
+**5 V and 3.3 V**
+
+![Power](docs/img/sch_power.png)
+
+**USB-C** (native USB, ESD protection, the SS14 power diode)
+
+![USB-C](docs/img/sch_usb.png)
+
+**ESP32-C6 module, EN and BOOT buttons, status LED and the GPIO header**
+
+![MCU](docs/img/sch_mcu.png)
+
+**Relays and their drivers**
+
+![Relays](docs/img/sch_relays.png)
+
+</details>
+
+## Circuit board
+
+80 × 80 mm, 2 layers, 1.6 mm, every part on the top side. All the terminals are on the bottom edge,
+from left to right: the CTs, the mains input, relay 1 and relay 2. That keeps every wire in one place,
+and the low-voltage CT terminal at the far end from the relay contacts. USB-C is on the top edge.
+The ESP32-C6's antenna points out of the top-right corner, with no copper under it on either layer.
+
+| Top | Bottom |
+|---|---|
+| ![Board top](docs/img/board_top.png) | ![Board bottom](docs/img/board_bottom.png) |
+
+| From the front left | Terminals along the bottom edge |
+|---|---|
+| ![Board, front left](docs/img/board_iso2.png) | ![Board, terminal edge](docs/img/board_front.png) |
+
+**Mains spacing.** The mains parts are along the bottom half (the dark, unpoured area on the bottom
+view), and the low-voltage parts above them. The rules are checked by KiCad's DRC, including its
+creepage check, on every build:
+
+| Between | Clearance and creepage |
+|---|---|
+| any mains net and low voltage (ground, 5 V, 3.3 V, signals) | 6.5 mm |
+| L and N/L2, the input and each relay, relay 1 and relay 2 | 4 mm |
+| a relay's COM and NO (the open contact sees line voltage) | 4 mm creepage, 3 mm clearance |
+| L and N/L2 inside the 5.08 mm terminal and the HLK-PM01's pins | 2 mm (the parts' own pitch); a 1 mm slot between the terminal pins lengthens the surface path |
+
+The relay contacts carry up to 10 A on 5 mm wide copper areas on both layers, with the solder mask
+opened so they can be tinned thicker. One mounting hole sits between the input and the CT area, so
+it has a copper-free ring: a metal screw there can't bridge ground towards mains.
+
+**Layers.** The board is routed by hand (the tracks are listed in [`hw/routes.py`](hw/routes.py)):
+45° corners, 0.2 mm signal tracks, ground poured on both layers and stitched with vias.
+
+| All copper and top silkscreen | Top copper | Bottom copper |
+|---|---|---|
+| ![All layers](docs/img/layer_top.png) | ![F.Cu](docs/img/layer_f_cu.png) | ![B.Cu](docs/img/layer_b_cu.png) |
+
+| Top silkscreen | Top solder mask (openings) |
+|---|---|
+| ![F.Silkscreen](docs/img/layer_f_silk.png) | ![F.Mask](docs/img/layer_f_mask.png) |
+
+The GPIO header (J6) carries 3V3, 5V, GND and GPIO 0, 1, 3, 4, 5, 6, 7, 8, 14, 15, 18, 19, 20 and 21.
+The silkscreen marks the strapping pins (4, 5, 8, 15) with `*`.
+
+## Case
+
+Two printed parts, built in build123d from the board's own dimensions ([`case/case.py`](case/case.py)):
+
+- **Cover:** the front shell. The board screws to four pillars inside it from the solder side
+  (4 × M3 × 8, self-tapping into 2.8 mm pilot holes, no inserts). The plugs stick out through
+  openings in the bottom wall and USB-C through the top. There are vents over the power module and
+  beside the relays. The front face is closed; the status LED shows through a 0.6 mm thin window.
+- **Base:** the back plate, which clips onto a TS35 DIN rail: a fixed hook at the top and a sprung
+  latch at the bottom. To take it off the rail, lever the latch down with a screwdriver in the lower
+  slot. Four M3 × 4 screws hold it to the cover from the back.
+
+| Exploded | Board in the cover, from the back | On a DIN rail, from the back |
+|---|---|---|
+| ![Exploded](docs/img/case_exploded.png) | ![Board in the cover](docs/img/case_inside.png) | ![On a DIN rail](docs/img/case_din.png) |
+
+Print in PETG (the latch has to flex): 0.2 mm layers, 3 walls, no supports. Print the base flat on
+its inside face with the clip up, and the cover on its front face. STEP files and print-oriented
+STL files are in [`case/out`](case/out).
 
 ## Safety
 
 **This board connects to mains voltage.** Build, wire and install it only if you are competent to do
 mains work, and power it only inside its case, inside a closed plastic enclosure.
 
-- Mains and the low-voltage side are separated by 6.5 mm creepage and clearance (checked by KiCad's
-  creepage DRC on every build). The HLK-PM01, the ZMPT107-1 and the relays are the isolation barrier.
-- Both input lines are fused by 10 R 1 W fusible resistors, with a 10D561K MOV after the fuses.
-- USB-C, the CT terminal and the GPIO header are on the isolated side. Even so, **do not connect USB to
-  a board that is wired to mains**: flash it on the bench first, then use OTA.
-- No protective earth: the board and case are meant for a plastic enclosure only.
-- The relays are rated 16 A; keep loads at or below 10 A and use an external contactor above that.
+- The HLK-PM01, the ZMPT107-1 and the relays are the isolation barrier. Everywhere else, mains is
+  kept 6.5 mm from the low-voltage side.
+- USB-C, the CT terminal and the GPIO header are on the isolated side. Even so, **don't connect USB
+  to a board that is wired to mains**: flash it on the bench first, then update it over Wi-Fi.
+- There is no protective earth. The board and case are for a plastic enclosure only.
+- The relays are rated 16 A. Keep loads at or below 10 A, and use an external contactor above that.
+- No metal near the board: the warning on the bottom silkscreen says so too.
 
 ## Wiring
 
-All terminals are along the bottom edge and unplug, so wire the plugs before plugging them in.
-Left to right, looking at the component side:
+All the terminals unplug: wire each plug first, then plug it in. Looking at the component side, left
+to right:
 
 | Terminal | Pins | Use |
 |---|---|---|
-| J4 (3.81 mm) | CT1+, CT1-, CT2+, CT2- | the two CT clamps (low voltage) |
+| J4 (3.81 mm) | CT1+, CT1−, CT2+, CT2− | the two CT clamps (low voltage) |
 | J1 (5.08 mm) | L, N/L2 | supply and voltage reference |
 | J2 (5.08 mm) | COM, NO | relay 1, dry contact |
 | J3 (5.08 mm) | COM, NO | relay 2, dry contact |
 
-- **120 V line-neutral:** L to `L`, neutral to `N/L2`.
-- **240 V leg-leg (US split phase):** L1 to `L`, L2 to `N/L2`. Both inputs are fused, so either way
-  works. The voltage reading then is the leg-leg voltage.
-- **Relays:** dry contacts, so they switch whatever you wire through them (for example `L` -> COM,
-  NO -> load). A contactor coil goes the same way.
-- **CTs:** clamp each CT round one conductor. If a channel reads negative power, turn the clamp round
-  or swap its two wires.
+- **120 V line–neutral:** line to `L`, neutral to `N/L2`.
+- **240 V leg–leg (US split phase):** L1 to `L`, L2 to `N/L2`. Both inputs are fused, so either
+  way works. The voltage reading is then the leg–leg voltage.
+- **Relays:** dry contacts, so they switch whatever you wire through them, for example `L` → COM and
+  NO → load. A contactor coil is wired the same way.
+- **CTs:** clamp each CT around one conductor. If a channel reads negative power, turn the clamp
+  around or swap its two wires.
 
 ## Firmware
 
-[`firmware/c6-energy-relay.yaml`](firmware/c6-energy-relay.yaml) is a starter ESPHome config: BL0939
-sensors, `Relay 1` / `Relay 2` switches (off after a reboot), the status LED and the BOOT button
-(toggles relay 1). Add a `secrets.yaml` with `wifi_ssid`, `wifi_password`, `api_key`, `ota_password`
-and `ap_password`, then flash over USB-C (native USB, no buttons needed) and use OTA after that.
+[`firmware/c6-energy-relay.yaml`](firmware/c6-energy-relay.yaml) is a starter ESPHome config. It has:
 
-**Calibration:** with a known resistive load and a meter, set the `*_cal` substitutions to
-(meter reading / reported value); the energy sensors use the power factors. The voltage factor
-starts at 1.13 because this board loads the
-ZMPT107 with 22 R where Seeed's meter uses 24.9 R.
+- the BL0939 sensors: voltage, current, power and energy;
+- `Relay 1` and `Relay 2` switches, off after a reboot;
+- the status LED;
+- the BOOT button, which toggles relay 1.
+
+Add a `secrets.yaml` with `wifi_ssid`, `wifi_password`, `api_key`, `ota_password` and
+`ap_password`. Flash it over USB-C (native USB, no buttons needed), then update over Wi-Fi from then
+on. Logs go to the USB port, which leaves the ESP32's UART to the BL0939.
 
 | GPIO | Use | GPIO | Use |
 |---|---|---|---|
 | 16 | UART TX to BL0939 RX | 22 | relay 1 |
 | 17 | UART RX from BL0939 TX | 23 | relay 2 |
-| 12 / 13 | USB D- / D+ | 2 | status LED |
-| 9 | BOOT button | 8 | 10 k pull-up (download mode) |
+| 12 / 13 | USB D− / D+ | 2 | status LED |
+| 9 | BOOT button | 8 | 10 kΩ pull-up (strapping) |
 
-The header (J6, holes only) carries 3V3, 5V, GND and GPIO 0, 1, 3, 4, 5, 6, 7, 8, 14, 15, 18, 19, 20,
-21; the silkscreen marks the strapping pins (4, 5, 8, 15) with `*`.
+**Calibration:** with a known resistive load and a meter, set each `*_cal` substitution to
+(meter reading ÷ reported value). The energy sensors use the power factors. The voltage factor
+starts at 1.13, because this board loads the ZMPT107 with 22 Ω where Seeed's meter uses 24.9 Ω.
 
 ## Ordering at JLCPCB
 
-Files are in [`hw/out/jlc`](hw/out/jlc):
+The order files are in [`hw/out/jlc`](hw/out/jlc):
 
-1. PCB: upload `gerbers.zip` (2 layers, 1.6 mm, 1 oz, any colour, HASL).
-2. Assembly: **Standard PCBA** (the board has through-hole parts), top side, upload `bom.csv` and
-   `cpl.csv`. Check every part's orientation in JLC's placement preview before paying, above all the
-   ESP32-C6 module, USB-C, the BL0939, the LDO (U3) and ESD chip (U4: 180 degrees off shorts VBUS
-   to GND), the diodes, the transistors and both buttons (90 degrees off holds EN or BOOT low).
-3. Plugs: add the loose plugs from `plugs.csv` to the same order as parts (3 x DB2EK-5.08-2P and
-   1 x WJ15EDGK-3.81-4P per board).
+1. **PCB:** upload `gerbers.zip`: 2 layers, 1.6 mm, 1 oz, HASL, any colour.
+2. **Assembly:** choose **Standard PCBA** (the board has through-hole parts), top side, and upload
+   `bom.csv` and `cpl.csv`.
+3. **Check the placement preview before paying.** Every part should sit on its footprint and point
+   the right way. Pay most attention to:
+   - the ESP32-C6 module and USB-C;
+   - the BL0939;
+   - the LDO (U3) and the ESD chip (U4). U4 placed 180° off shorts USB power to ground;
+   - the diodes and transistors;
+   - both buttons. A button turned 90° holds EN or BOOT low.
+4. **Plugs:** add the loose plugs from `plugs.csv` to the same order as parts: 3 × DB2EK-5.08-2P and
+   1 × WJ15EDGK-3.81-4P per board.
 
-Cost estimate (live part prices on 2026-11-21; fees, PCB and shipping are estimates, see
-[`cost.md`](hw/out/jlc/cost.md)):
+Cost estimate from [`cost.md`](hw/out/jlc/cost.md). Part prices are live JLC prices from 2026-11-21;
+the fees, PCB and shipping figures are estimates, so check the real quote.
 
 | Boards | Total | Per board |
 |---|---|---|
@@ -97,42 +252,59 @@ Cost estimate (live part prices on 2026-11-21; fees, PCB and shipping are estima
 | 50 | $693 | $13.86 |
 | 100 | $1207 | $12.07 |
 
-## Case
+The most expensive parts per board, at 30 boards:
 
-[`case/case.py`](case/case.py) (build123d) makes two parts from the board's own feature export:
+| Part | Cost per board |
+|---|---|
+| ESP32-C6-MINI-1-N4 | $3.28 |
+| HLK-PM01 | $2.16 |
+| two relays | $1.88 |
+| BL0939 | $0.68 |
+| ZMPT107-1 | $0.42 |
 
-- **base**: the back plate that clips onto a TS35 rail. A fixed hook at the top, a sprung latch at
-  the bottom. Lever the latch out with a screwdriver in the lower slot to take it off the rail.
-- **cover**: the front shell. The board screws to its four pillars from the solder side
-  (4 x M3 x 8, self-tapping into 2.8 mm holes); the base then screws onto the cover from the back
-  (4 x M3 x 4 into the corner bosses). The plugs stick out through the bottom wall, USB-C through
-  the top. The front face is closed; the status LED shows through a 0.6 mm window.
-
-Print in PETG (the latch flexes), 0.2 mm layers, 3 walls, no supports: the base flat on its inside
-face (clip up), the cover on its front face. STEP and print-oriented STL files are in
-[`case/out`](case/out).
-
-![Case, exploded](case/out/preview.png)
+The 14 Extended parts add $3 each per order.
 
 ## Building it from source
 
-Everything is generated by scripts; edit the scripts, not the KiCad files.
+Everything is generated by scripts; edit the scripts, not the KiCad files. `KPY` is KiCad 10's own
+Python (`"C:\Program Files\KiCad\10.0\bin\python.exe"` on Windows); the other steps use a normal
+Python 3.11+ with `pip install -r requirements-dev.txt` (build123d, pytest) plus PyMuPDF, Pillow and
+VTK for the images.
 
 | Step | Command |
 |---|---|
-| part check, datasheets | `python -m hw.tools.fetch_datasheets key=C123...` (optional) |
-| symbols, footprints | `KPY hw/gen_lib.py` then `python -m hw.gen_3d` |
-| schematic, project | `python -m hw.gen_sch` |
-| board (placement, rules, zones) | `KPY hw/gen_pcb.py` |
-| tracks, zone fill | `KPY hw/route.py` (routes are in `hw/routes.py`, laid out by hand) |
+| symbols, footprints, 3D bodies | `KPY hw/gen_lib.py`, then `python -m hw.gen_3d` |
+| schematic and project | `python -m hw.gen_sch` |
+| board: placement, rules, zones, silkscreen | `KPY hw/gen_pcb.py` |
+| tracks and zone fill | `KPY hw/route.py` |
 | board STEP | `kicad-cli pcb export step --drill-origin --subst-models -o hw/out/board.step hw/c6-energy-relay.kicad_pcb` |
-| JLC files | `KPY hw/export_jlc.py` |
-| case | `python case/case.py --preview` |
-| tests | `python -m pytest` (KiCad ERC, DRC with creepage and schematic parity, JLC files, case fit, ESPHome config) |
+| schematic PDF | `kicad-cli sch export pdf -o hw/out/schematic.pdf hw/c6-energy-relay.kicad_sch` |
+| JLC files and cost sheet | `KPY hw/export_jlc.py` |
+| case | `python case/case.py` |
+| README images | `python docs/make_images.py` and `python docs/block_diagram.py` |
+| tests | `python -m pytest` |
 
-`KPY` is KiCad 10's Python: `"C:\Program Files\KiCad\10.0\bin\python.exe"`. The circuit lives in
-[`hw/design.py`](hw/design.py) and the parts in [`hw/parts.py`](hw/parts.py); the schematic, board,
-BOM and firmware pin check all read from them. The design notes are in
-[`docs/superpowers/specs`](docs/superpowers/specs).
+The tests run:
 
-Hardware tests (flashing, measuring, switching) happen once boards arrive.
+- KiCad's ERC, and its DRC with the creepage rules and schematic parity;
+- the antenna keep-out and the mounting-hole spacing;
+- a silkscreen check;
+- the JLC files against the board;
+- live JLC stock for 30 boards;
+- the case fit: board, plugs, screws, openings and the DIN clip;
+- the ESP32 pins in the firmware against the design;
+- ESPHome validating the config, through `esphome` on the PATH, `$ESPHOME_CMD` or `esphome-wsl`
+  inside WSL.
+
+The circuit lives in [`hw/design.py`](hw/design.py) and the parts, with their LCSC numbers, in
+[`hw/parts.py`](hw/parts.py). The schematic, board, BOM and firmware pin check all read from those
+two files.
+
+| Folder | Contents |
+|---|---|
+| `hw/` | the generators, KiCad project, local symbol and footprint library (`lib/`) |
+| `hw/out/` | schematic PDF, board STEP, JLC files |
+| `case/` | the case script and its STEP/STL output |
+| `firmware/` | ESPHome config |
+| `docs/` | the scripts that make the README images, and the images |
+| `tests/` | pytest checks for all of the above |

@@ -26,10 +26,11 @@ SYM = LIB / "c6er.kicad_sym"
 # ----------------------------------------------------------------------------------------------
 # symbols (written as S-expressions)
 # ----------------------------------------------------------------------------------------------
-def _prop(name, value, x, y, hide=False):
+def _prop(name, value, x, y, hide=False, justify=""):
     h = " (hide yes)" if hide else ""
+    j = f" (justify {justify})" if justify else ""
     return (f'\t\t(property "{name}" "{value}" (at {x} {y} 0)\n'
-            f'\t\t\t(effects (font (size 1.27 1.27)){h})\n\t\t)\n')
+            f'\t\t\t(effects (font (size 1.27 1.27)){j}{h})\n\t\t)\n')
 
 
 def _pin(num, name, kind, x, y, angle, length=2.54):
@@ -38,14 +39,18 @@ def _pin(num, name, kind, x, y, angle, length=2.54):
             f'\t\t\t\t(number "{num}" (effects (font (size 1.27 1.27))))\n\t\t\t)\n')
 
 
-def _symbol(name, ref, value, desc, footprint, body, pins, graphics="", show_pin_names=True):
+def _symbol(name, ref, value, desc, footprint, body, pins, graphics="", show_pin_names=True, fields_right=False):
     (x0, y0, x1, y1) = body
     s = f'\t(symbol "{name}"\n'
     if not show_pin_names:
         s += "\t\t(pin_names (hide yes))\n"
     s += "\t\t(exclude_from_sim no) (in_bom yes) (on_board yes)\n"
-    s += _prop("Reference", ref, x0, y1 + 1.27)
-    s += _prop("Value", value, x0, y0 - 1.27)
+    if fields_right:            # beside the body: pins on top and bottom leave no room there
+        s += _prop("Reference", ref, x1 + 1.27, 1.27, justify="left")
+        s += _prop("Value", value, x1 + 1.27, -1.27, justify="left")
+    else:
+        s += _prop("Reference", ref, x0, y1 + 1.27)
+        s += _prop("Value", value, x0, y0 - 1.27)
     s += _prop("Footprint", footprint, 0, 0, hide=True)
     s += _prop("Datasheet", "", 0, 0, hide=True)
     s += _prop("Description", desc, 0, 0, hide=True)
@@ -102,7 +107,8 @@ def symbols() -> str:
     pins = [("1", "A1", "passive", -3.81, 7.62, 270), ("2", "A2", "passive", -3.81, -7.62, 90),
             ("3", "COM", "passive", 3.81, -7.62, 90), ("4", "NO", "passive", 5.08, 7.62, 270)]
     out.append(_symbol("HF32FV-16", "K", "HF32FV-16", "Hongfa HF32FV-16 16 A SPST-NO relay, 4 kV coil-contact",
-                       "c6er:HF32FV-16", (-6.35, -5.08, 6.35, 5.08), pins, g, show_pin_names=False))
+                       "c6er:HF32FV-16", (-6.35, -5.08, 6.35, 5.08), pins, g, show_pin_names=False,
+                       fields_right=True))
     out.append(")\n")
     return "".join(out)
 

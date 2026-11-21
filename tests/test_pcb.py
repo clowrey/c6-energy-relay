@@ -14,7 +14,8 @@ SPACING_TYPES = {"clearance", "creepage", "hole_clearance", "copper_edge_clearan
 @pytest.fixture(scope="module")
 def drc(tmp_path_factory):
     out = tmp_path_factory.mktemp("drc") / "drc.json"
-    kcli("pcb", "drc", "--schematic-parity", "--format", "json", "--units", "mm", "-o", out, PCB, check=False)
+    kcli("pcb", "drc", "--schematic-parity", "--severity-all", "--format", "json", "--units", "mm", "-o", out, PCB,
+         check=False)
     return json.loads(out.read_text(encoding="utf8"))
 
 
@@ -179,3 +180,11 @@ def test_screw_bridge_mains_to_lv(board_dump):
         d_m = min(dist(h, i) for i in copper if i["netclass"].startswith(("MAINS", "RELAY")))
         d_l = min(dist(h, i) for i in copper if not i["netclass"].startswith(("MAINS", "RELAY")))
         assert (d_m - head) + (d_l - head) >= 6.5, (h["ref"], round(d_m, 2), round(d_l, 2))
+
+
+def test_silkscreen_readable(drc):
+    """No silk on silk, no text over pads (JLC clips it), no text under 0.8 mm."""
+    bad = [v for v in drc["violations"] if v["type"] in ("silk_overlap", "text_height")]
+    bad += [v for v in drc["violations"] if v["type"] == "silk_over_copper"
+            and any(i["description"].startswith(("PCB text", "Reference field")) for i in v["items"])]
+    assert bad == [], _fmt(bad)

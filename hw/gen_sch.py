@@ -120,28 +120,43 @@ OUTWARD = {0: (-1, 0), 180: (1, 0), 90: (0, 1), 270: (0, -1)}  # schematic coord
 STUB = 2.54
 
 
-def _bbox(pins, nets_by_pin):
-    xs, ys = [0.0], [0.0]
+def _field_box(fields):
+    """Rough extents of visible Reference/Value texts: [(x, y, angle, justify, text)] in library
+    coordinates -> xs, ys in sheet coordinates (1.27 mm font: ~1.0 mm per character)."""
+    xs, ys = [], []
+    for fx, fy, ang, just, text in fields:
+        w, h = len(text) * 1.0, 1.6
+        if ang in (90, 270):
+            w, h = h, w
+        x0 = fx if "left" in just else fx - w if "right" in just else fx - w / 2
+        xs += [x0, x0 + w]
+        ys += [-fy - h / 2, -fy + h / 2]
+    return xs, ys
+
+
+def _bbox(pins, nets_by_pin, fields=()):
+    xs, ys = _field_box(fields)
+    xs, ys = xs + [0.0], ys + [0.0]
     for num, x, y, ang in pins:
         dx, dy = OUTWARD[ang]
         reach = STUB + (len(nets_by_pin.get(num, "")) * 1.0 + 1.5 if dx else 1.5)
         xs += [x, x + dx * reach]
         ys += [-y, -y + dy * (STUB + (len(nets_by_pin.get(num, "")) * 1.0 + 1.5 if dy else 0))]
     x0, x1 = min(xs) - 2.54, max(xs) + 2.54
-    if x1 - x0 < 12.7:  # room for the value text under 2-pin parts
+    if x1 - x0 < 12.7 and not fields:  # room for the value text under 2-pin parts
         x0, x1 = -6.35, 6.35
     return x0, min(ys) - 5.08, x1, max(ys) + 5.08
 
 
 def layout(items):
-    """items: list of (key, block, pins, nets_by_pin) -> {key: (x, y)}"""
+    """items: list of (key, block, pins, nets_by_pin, fields) -> {key: (x, y)}"""
     pos = {}
     for block, ox, oy, width in BLOCKS:
         x, y, row_h = ox, oy, 0.0
-        for key, b, pins, nets in items:
+        for key, b, pins, nets, fields in items:
             if b != block:
                 continue
-            x0, y0, x1, y1 = _bbox(pins, nets)
+            x0, y0, x1, y1 = _bbox(pins, nets, fields)
             w, h = x1 - x0, y1 - y0
             if x + w > ox + width and x > ox:
                 x, y, row_h = ox, y + row_h, 0.0
@@ -152,14 +167,32 @@ def layout(items):
 
 
 # ---- writers ---------------------------------------------------------------------------------
+_FIELDS = {}
+
+
+def lib_fields(lib_id):
+    """{"Reference"|"Value": (x, y, angle, justify, hidden)} as the symbol's library draws them, so the
+    texts land where the symbol's author put them (beside the body, not across it)."""
+    if lib_id not in _FIELDS:
+        text = flat_symbol(lib_id)
+        out = {}
+        for m in re.finditer(r'\(property "(Reference|Value)" "[^"]*"\s*\(at ([-\d.]+) ([-\d.]+) ([-\d.]+)\)', text):
+            tail = text[m.end():text.find("(property", m.end())]
+            j = re.search(r"\(justify ([a-z ]+)\)", tail)
+            out[m.group(1)] = (float(m.group(2)), float(m.group(3)), float(m.group(4)), j.group(1) if j else "",
+                               "(hide yes)" in tail)
+        _FIELDS[lib_id] = out
+    return _FIELDS[lib_id]
+
+
 def _eff(hide=False, justify=""):
     j = f" (justify {justify})" if justify else ""
     h = " (hide yes)" if hide else ""
     return f"(effects (font (size 1.27 1.27)){j}{h})"
 
 
-def _prop(name, value, x, y, hide=False, ang=0):
-    return f'\t\t(property "{name}" "{value}" (at {x} {y} {ang}) {_eff(hide)})\n'
+def _prop(name, value, x, y, hide=False, ang=0, justify=""):
+    return f'\t\t(property "{name}" "{value}" (at {x} {y} {ang:g}) {_eff(hide, justify)})\n'
 
 
 def place_symbol(ref, lib_id, value, footprint, lcsc, x, y, pins, dnp=False, extra_props=()):
@@ -169,8 +202,14 @@ def place_symbol(ref, lib_id, value, footprint, lcsc, x, y, pins, dnp=False, ext
          f' (in_pos_files {in_bom}) (dnp {"yes" if dnp else "no"})\n'
          f'\t\t(uuid "{_uid("sym", ref)}")\n')
     hide_ref = ref.startswith("#")
-    s += _prop("Reference", ref, x, _snap(y - 3.81), hide=hide_ref)
-    s += _prop("Value", value, x, _snap(y + 3.81), hide=hide_ref and lib_id != "power:PWR_FLAG")
+    hidden = {"Reference": hide_ref, "Value": hide_ref and lib_id != "power:PWR_FLAG"}
+    fields = lib_fields(lib_id)
+    for name, val, dy in (("Reference", ref, -3.81), ("Value", value, 3.81)):
+        if name in fields:      # library position (its y points up, the sheet's down)
+            fx, fy, fa, fj, _ = fields[name]
+            s += _prop(name, val, round(x + fx, 3), round(y - fy, 3), hide=hidden[name], ang=fa, justify=fj)
+        else:
+            s += _prop(name, val, x, _snap(y + dy), hide=hidden[name])
     s += _prop("Footprint", footprint, x, y, hide=True)
     s += _prop("Datasheet", "", x, y, hide=True)
     if lcsc:
@@ -226,8 +265,12 @@ def build() -> str:
     comps = design.COMPONENTS
     lib_ids = sorted({c.symbol for c in comps} | {"power:PWR_FLAG"})
     pins_of = {lid: symbol_pins(lid) for lid in lib_ids}
-    items = [(c.ref, c.block, pins_of[c.symbol], c.pins) for c in comps]
-    items += [(f"#FLG{i + 1:02d}", "mains", pins_of["power:PWR_FLAG"], {"1": net})
+    def fields(c):
+        f = lib_fields(c.symbol)
+        return [(*f[n][:4], t) for n, t in (("Reference", c.ref), ("Value", c.value)) if n in f]
+
+    items = [(c.ref, c.block, pins_of[c.symbol], c.pins, fields(c)) for c in comps]
+    items += [(f"#FLG{i + 1:02d}", "mains", pins_of["power:PWR_FLAG"], {"1": net}, [])
               for i, net in enumerate(PWR_FLAGS)]
     pos = layout(items)
 

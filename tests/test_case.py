@@ -24,10 +24,30 @@ def board():
 
 
 def _overlap(a, b):
-    try:
-        return (a & b).volume
-    except Exception:
-        return 0.0
+    """Volume of a & b, solid by solid (a Compound & Solid is unreliable; build123d may return a
+    ShapeList with None for no overlap). Errors must surface, never count as 'no overlap'."""
+    total = 0.0
+    for sb in b.solids():
+        r = a & sb
+        total += sum(s.volume for s in (r if isinstance(r, list) else [r]) if s is not None)
+    return total
+
+
+def test_openings_cut(parts):
+    """Each plug, USB-C, vent and the LED window is a hole through the cover, not solid plastic."""
+    base, cover = parts
+    w, h = FEATURES["outline_mm"]
+    wall_y_bottom = -case.GAP - case.WALL / 2
+    for c in FEATURES["connectors"]:
+        x0, y0, z0, x1, y1, z1 = c["plug_envelope"]
+        wy = wall_y_bottom if c["edge"] == "bottom" else h + case.GAP + case.WALL / 2
+        assert not cover.is_inside(Vector((x0 + x1) / 2, wy, (z0 + z1) / 2)), c["ref"]
+    hot = FEATURES["hot_parts"][0]
+    assert not cover.is_inside(Vector(hot[0] + 3.8, h + case.GAP + case.WALL / 2, 10))      # top vent
+    assert not cover.is_inside(Vector(w + case.GAP + case.WALL / 2, 31.8, 10))              # side vent
+    lx, ly = FEATURES["led"]
+    assert not cover.is_inside(Vector(lx, ly, case.Z_FRONT_OUT - case.LED_WINDOW - 0.2))
+    assert cover.is_inside(Vector(lx, ly, case.Z_FRONT_OUT - case.LED_WINDOW / 2))
 
 
 def test_solids_valid(parts):
