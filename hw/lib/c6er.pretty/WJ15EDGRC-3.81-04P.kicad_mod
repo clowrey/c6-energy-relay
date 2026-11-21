@@ -1,0 +1,118 @@
+(footprint "WJ15EDGRC-3.81-04P"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Kangnex WJ15EDGRC-3.81-4P right-angle pluggable header; mating face toward +Y")
+	(property "Reference" "REF**"
+		(at 5.715 -2.7 0)
+		(layer "F.SilkS")
+		(uuid "5dbbe975-fb59-42d4-8758-b35f2860ec7a")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Value" "WJ15EDGRC-3.81-04P"
+		(at 5.715 2.425 0)
+		(layer "F.Fab")
+		(uuid "b9df4be4-37cb-41e5-b536-6cad2d16777c")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "56c42e73-ec13-4d1d-9fc4-2f015fc5ec19")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "a3adf707-5449-44e6-9a9f-08a0639dc9d6")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(attr through_hole)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_rect
+		(start -2.465 -1.319999)
+		(end 13.895 6.17)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "f751d8c6-b6bf-4097-ad3e-56a473d2189b")
+	)
+	(fp_rect
+		(start -2.845 -1.7)
+		(end 14.275 6.55)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "bea97aee-9be6-4e58-99de-1dbaf39f8fd7")
+	)
+	(fp_rect
+		(start -2.345 -1.2)
+		(end 13.775 6.05)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "8b43c044-d651-41f9-8bbc-75ba41fb6f91")
+	)
+	(pad "1" thru_hole rect
+		(at 0 0)
+		(size 2.1 2.1)
+		(drill 1.4)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(thermal_bridge_angle 45)
+		(uuid "d8bd59a6-def5-415d-8070-24ef34b29148")
+	)
+	(pad "2" thru_hole circle
+		(at 3.81 0)
+		(size 2.1 2.1)
+		(drill 1.4)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "8f4c20cd-09d7-4673-bdb6-1d94e03df159")
+	)
+	(pad "3" thru_hole circle
+		(at 7.62 0)
+		(size 2.1 2.1)
+		(drill 1.4)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "3d2e6876-4081-4083-a14b-8349a48f77e7")
+	)
+	(pad "4" thru_hole circle
+		(at 11.43 0)
+		(size 2.1 2.1)
+		(drill 1.4)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "50a88d15-beec-44d9-9ec0-fe387dde781d")
+	)
+	(embedded_fonts no)
+)
