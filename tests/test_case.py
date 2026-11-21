@@ -80,3 +80,25 @@ def test_din_clip_span(parts):
     assert base.is_inside(Vector(x, yc + case.RAIL_SPAN / 2 + 0.3, zl))
     assert not base.is_inside(Vector(x, yc - case.RAIL_SPAN / 2 + 0.1, zl))
     assert base.is_inside(Vector(x, yc - case.RAIL_SPAN / 2 - 0.3, zl))
+
+
+def test_case_screws_far_from_mains():
+    """Base screws are reachable from outside: 6.5 mm from any mains copper (M3 shank radius 1.5)."""
+    w, h = FEATURES["outline_mm"]
+    for x, y in case.corner_bosses(w, h):
+        for bx0, by0, bx1, by1 in FEATURES["mains_copper"]:
+            dx = max(bx0 - x, 0, x - bx1)
+            dy = max(by0 - y, 0, y - by1)
+            assert (dx * dx + dy * dy) ** 0.5 - 1.5 >= 6.5, ((x, y), (bx0, by0, bx1, by1))
+
+
+def test_screws_fit(parts):
+    from build123d import Cylinder
+    base, cover = parts
+    # base screws end inside the boss, short of the board
+    assert case.Z_BACK_OUT + case.M3_HEAD_RECESS + case.BASE_SCREW_LEN <= -0.5
+    # board-screw heads (pan head 5.6 x 2.4 under the board) and a 5.6 mm driver path clear of the case
+    for x, y, _ in FEATURES["holes"]:
+        head = Pos(x, y, -1.2) * Cylinder(2.8, 2.4)
+        for p in parts:
+            assert _overlap(p, head) < 0.01, ((x, y), _overlap(p, head))

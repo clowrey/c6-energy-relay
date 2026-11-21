@@ -8,7 +8,7 @@ Two parts:
          Wall openings: the plug row along the bottom edge, USB-C in the top edge, vents.
   base   the back plate that clips onto a TS35 rail: a fixed hook at the top and a sprung latch at the
          bottom (a 50 mm beam freed by two slots; lever it with a screwdriver in the lower slot to
-         release). Four M3 x 6 screws from the back self-tap into 2.8 mm pilots in the cover's corner
+         release). Four M3 x 4 screws from the back self-tap into 2.8 mm pilots in the cover's corner
          bosses.
 Nothing opens on the front face: the status LED shows through a 0.6 mm thin window.
 
@@ -41,6 +41,8 @@ FRONT_CLEAR = 1.5             # above the tallest part
 M3_PILOT_D, M3_PILOT_DEPTH = 2.8, 6.0
 M3_LEAD_IN_D, M3_LEAD_IN = 3.4, 0.8
 M3_CLEAR_D, M3_HEAD_D, M3_HEAD_H = 3.4, 6.0, 2.6
+M3_HEAD_RECESS = 1.2          # counterbore depth for the base screws' heads
+BASE_SCREW_LEN = 4.0          # M3 x 4: ends 1 mm short of the board
 PILLAR_D = 6.0
 BOSS_D = 5.8
 LED_WINDOW = 0.6
@@ -79,7 +81,9 @@ def one_solid(shape):
 
 def corner_bosses(w, h):
     # clear of the plugs (bottom), the USB-C (top-left) and the antenna keep-out (top-right)
-    return [(0.0, 9.0), (w, 9.0), (0.0, h - 9.0), (w, 40.0)]
+    # and >= 6.5 mm (plus the screw's radius) from the relay contact copper, clear of the board-screw
+    # heads
+    return [(0.0, 9.0), (0.0, h - 9.0), (w, 27.0), (w * 0.625, h)]
 
 
 def build_cover(f):
@@ -110,8 +114,8 @@ def build_cover(f):
     for i in range(6):
         vx = hot[0] + 3.0 + i * 3.2
         cover -= box(vx, vx + 1.6, h + GAP - 0.5, y1 + 1, 5.0, Z_FRONT_IN - 3.0)
-    for i in range(5):
-        vy = 14.0 + i * 3.2
+    for i in range(5):                               # above relay 2's contacts, not beside them
+        vy = 31.0 + i * 3.2
         cover -= box(w + GAP - 0.5, x1 + 1, vy, vy + 1.6, 4.0, Z_FRONT_IN - 3.0)
     # LED window: thin the front face from the inside
     lx, ly = f["led"]
@@ -127,7 +131,7 @@ def build_base(f):
     # screws into the cover's corner bosses: clearance + counterbore from the back
     for x, y in corner_bosses(w, h):
         base -= cyl(x, y, M3_CLEAR_D, Z_BACK_OUT - 1, Z_BACK_IN + 1)
-        base -= cyl(x, y, M3_HEAD_D, Z_BACK_OUT - 1, Z_BACK_OUT + 1.2)
+        base -= cyl(x, y, M3_HEAD_D, Z_BACK_OUT - 1, Z_BACK_OUT + M3_HEAD_RECESS)
     yc = RAIL_Y
     z_lip0 = Z_BACK_OUT - FLANGE_T - 0.2           # lip's face toward the rail flange
     z_tip = z_lip0 - LIP_T

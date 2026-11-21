@@ -157,3 +157,25 @@ def test_mains_tracks_on_top(board_dump):
     for item in board_dump["copper"]:
         if item["kind"] == "PCB_TRACK" and item["netclass"].startswith("MAINS"):
             assert item["layer"] == "F.Cu", item
+
+
+def test_screw_bridge_mains_to_lv(board_dump):
+    """A mounting screw is metal: the path mains copper -> screw -> low-voltage copper must still add
+    up to 6.5 mm (screw head radius 2.75 mm)."""
+    head = 2.75
+
+    def dist(h, item):
+        if item["kind"] == "zone":
+            return min(((p[0] - h["x"]) ** 2 + (p[1] - h["y"]) ** 2) ** 0.5 for p in item["points"])
+        if item["kind"] == "PCB_TRACK":
+            return _seg_dist((h["x"], h["y"]), item["start"], item["end"]) - item["width"] / 2
+        bx0, by0, bx1, by1 = item["bbox"]
+        dx = max(bx0 - h["x"], 0, h["x"] - bx1)
+        dy = max(by0 - h["y"], 0, h["y"] - by1)
+        return (dx * dx + dy * dy) ** 0.5
+
+    copper = [i for i in board_dump["copper"] if i["net"]]
+    for h in (f for f in board_dump["footprints"] if f["ref"].startswith("H")):
+        d_m = min(dist(h, i) for i in copper if i["netclass"].startswith(("MAINS", "RELAY")))
+        d_l = min(dist(h, i) for i in copper if not i["netclass"].startswith(("MAINS", "RELAY")))
+        assert (d_m - head) + (d_l - head) >= 6.5, (h["ref"], round(d_m, 2), round(d_l, 2))

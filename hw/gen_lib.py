@@ -195,8 +195,8 @@ def fp_relay():
     # centre of the body at the origin
     _pad(fp, 1, 7.62, -3.8, 2.2, 1.3, "rect")
     _pad(fp, 2, 7.62, 3.8, 2.2, 1.3)
-    _pad(fp, 3, -5.08, -3.45, (2.6, 3.6), None, "oval", drill_oval=(0.9, 2.1))  # COM
-    _pad(fp, 4, -7.62, 3.45, (2.6, 3.6), None, "oval", drill_oval=(0.9, 2.1))   # NO
+    _pad(fp, 3, -5.08, -3.45, (2.2, 2.8), None, "oval", drill_oval=(0.9, 2.1))  # COM
+    _pad(fp, 4, -7.62, 3.45, (2.2, 2.8), None, "oval", drill_oval=(0.9, 2.1))   # NO (4 mm to COM)
     _body(fp, -9.2, -5.1, 9.2, 5.1)
     return fp
 

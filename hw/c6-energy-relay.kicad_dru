@@ -29,6 +29,26 @@
   (constraint clearance (min 4mm))
   (constraint creepage (min 4mm))
 )
+(rule "relay 1 COM to NO (the open contact sees line voltage)"
+  (condition "((A.NetName == '/K1_COM' && B.NetName == '/K1_NO') || (A.NetName == '/K1_NO' && B.NetName == '/K1_COM'))")
+  (constraint clearance (min 3mm))
+  (constraint creepage (min 4mm))
+)
+(rule "relay 1 COM to NO inside its 5.08 mm terminal (slot between the pins)"
+  (condition "((A.NetName == '/K1_COM' && B.NetName == '/K1_NO') || (A.NetName == '/K1_NO' && B.NetName == '/K1_COM')) && A.memberOfFootprint('J2') && B.memberOfFootprint('J2')")
+  (constraint clearance (min 2mm))
+  (constraint creepage (min 2mm))
+)
+(rule "relay 2 COM to NO (the open contact sees line voltage)"
+  (condition "((A.NetName == '/K2_COM' && B.NetName == '/K2_NO') || (A.NetName == '/K2_NO' && B.NetName == '/K2_COM'))")
+  (constraint clearance (min 3mm))
+  (constraint creepage (min 4mm))
+)
+(rule "relay 2 COM to NO inside its 5.08 mm terminal (slot between the pins)"
+  (condition "((A.NetName == '/K2_COM' && B.NetName == '/K2_NO') || (A.NetName == '/K2_NO' && B.NetName == '/K2_COM')) && A.memberOfFootprint('J3') && B.memberOfFootprint('J3')")
+  (constraint clearance (min 2mm))
+  (constraint creepage (min 2mm))
+)
 (rule "relay contact copper"
   (condition "A.NetClass == 'RELAY1' || A.NetClass == 'RELAY2'")
   (constraint track_width (min 2.5mm))

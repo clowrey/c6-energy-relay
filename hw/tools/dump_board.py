@@ -42,23 +42,26 @@ def main(pcb, out):
         if z.GetIsRuleArea():
             continue
         if z.GetNetname() == "/GND":
-            # ground only matters near the antenna: sample the keep-out box and a 2 mm margin
+            # ground matters near the antenna and around the mounting holes (screw bridges)
             kx0, ky0, kx1, ky1 = ANTENNA_KEEPOUT                     # y down
-            region = (kx0 - 2, H - ky1 - 2, kx1, H - ky0)            # x0, y0, x1, y1 (y up)
+            regions = [(kx0 - 2, H - ky1 - 2, kx1, H - ky0)]          # x0, y0, x1, y1 (y up)
+            for f in fps:
+                if f["ref"].startswith("H"):
+                    regions.append((f["x"] - 9, f["y"] - 9, f["x"] + 9, f["y"] + 9))
         else:
-            bx0, by0, bx1, by1 = bbox(z)
-            region = (bx0, by0, bx1, by1)
+            regions = [tuple(bbox(z))]
         for layer in z.GetLayerSet().CuStack():
             polys = z.GetFilledPolysList(layer)
             pts = []  # 0.5 mm grid points covered by the fill (board coordinates, y up)
-            x = max(0.0, round(region[0] * 2) / 2)
-            while x <= min(W, region[2]):
-                y = max(0.0, round(region[1] * 2) / 2)
-                while y <= min(H, region[3]):
-                    if polys.Contains(pcbnew.VECTOR2I(pcbnew.FromMM(x + OX), pcbnew.FromMM(OY + H - y))):
-                        pts.append([x, y])
-                    y += 0.5
-                x += 0.5
+            for region in regions:
+                x = max(0.0, round(region[0] * 2) / 2)
+                while x <= min(W, region[2]):
+                    y = max(0.0, round(region[1] * 2) / 2)
+                    while y <= min(H, region[3]):
+                        if polys.Contains(pcbnew.VECTOR2I(pcbnew.FromMM(x + OX), pcbnew.FromMM(OY + H - y))):
+                            pts.append([x, y])
+                        y += 0.5
+                    x += 0.5
             if pts:
                 xs, ys = [p[0] for p in pts], [p[1] for p in pts]
                 copper.append({"kind": "zone", "ref": "", "net": z.GetNetname(), "netclass": z.GetNetClassName(),

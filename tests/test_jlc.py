@@ -68,3 +68,14 @@ def test_plugs_listed():
     rows = _rows("plugs.csv")
     lcsc = {r["LCSC"] for r in rows}
     assert lcsc == {PARTS["term508_plug"].lcsc, PARTS["term381_plug"].lcsc}
+
+
+def test_cpl_positions_are_part_centres():
+    """JLC places by the part centre: CPL Mid X/Y = centre of the footprint's pads (not its anchor,
+    which is pin 1 on the through-hole parts)."""
+    feats = json.loads((HW / "out" / "board_features.json").read_text())
+    centres = feats["part_centres"]
+    for r in _rows("cpl.csv"):
+        x, y = float(r["Mid X"].rstrip("mm")), float(r["Mid Y"].rstrip("mm"))
+        cx, cy = centres[r["Designator"]]
+        assert abs(x - cx) < 0.01 and abs(y - cy) < 0.01, (r["Designator"], x, y, cx, cy)

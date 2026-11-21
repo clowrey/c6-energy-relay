@@ -7,7 +7,7 @@
 	(property "Reference" "REF**"
 		(at 5.715 -2.7 0)
 		(layer "F.SilkS")
-		(uuid "0e56115b-0a82-45a4-ae45-0f6dfe92d84f")
+		(uuid "077dbc09-b016-4d22-a9bf-3d4fd1cddc6c")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17,7 +17,7 @@
 	(property "Value" "WJ15EDGRC-3.81-04P"
 		(at 5.715 2.425 0)
 		(layer "F.Fab")
-		(uuid "bdce3fed-5d2d-4139-8ee5-b7d60fe83699")
+		(uuid "6c1f5754-ceee-471d-9bfd-ba56ba6531c4")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -28,7 +28,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "3e4e4701-c02b-4a21-9f95-284ea37a945b")
+		(uuid "74effa74-03d5-4d8c-bf17-41fff045345b")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -39,7 +39,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "14da5cc7-190a-4251-9bb8-cc8d7bfbd0b7")
+		(uuid "1f0330a4-536c-475e-81ab-099884af09c3")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -57,7 +57,7 @@
 		)
 		(fill no)
 		(layer "F.SilkS")
-		(uuid "1759608d-6451-4de8-9363-34c85443ef8e")
+		(uuid "20d48cc6-72c1-4347-ae60-bce3ea9c1e33")
 	)
 	(fp_rect
 		(start -2.845 -1.7)
@@ -68,7 +68,7 @@
 		)
 		(fill no)
 		(layer "F.CrtYd")
-		(uuid "18dcc6e2-706f-4143-8b1f-537deddfa673")
+		(uuid "6d3d8f4a-815a-4945-a80c-f331d862d355")
 	)
 	(fp_rect
 		(start -2.345 -1.2)
@@ -79,7 +79,7 @@
 		)
 		(fill no)
 		(layer "F.Fab")
-		(uuid "65a86981-e278-4259-ba99-63acac2820d0")
+		(uuid "83133141-3820-46b8-acb0-21c252c4546f")
 	)
 	(pad "1" thru_hole rect
 		(at 0 0)
@@ -88,7 +88,7 @@
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(thermal_bridge_angle 45)
-		(uuid "fc9c9748-e51c-45a7-a19f-d042ac8571d0")
+		(uuid "651356a7-5424-4afc-b40a-2255bbbb269d")
 	)
 	(pad "2" thru_hole circle
 		(at 3.81 0)
@@ -96,7 +96,7 @@
 		(drill 1.4)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
-		(uuid "3310eaf1-0068-40df-8791-1036af44bcb6")
+		(uuid "c56664b6-dde9-4cfc-8b4d-3dbbade152f0")
 	)
 	(pad "3" thru_hole circle
 		(at 7.62 0)
@@ -104,7 +104,7 @@
 		(drill 1.4)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
-		(uuid "290e7545-eeb8-4507-b09b-af4e58f06595")
+		(uuid "035707e5-2c89-45ae-b92e-c938d420c735")
 	)
 	(pad "4" thru_hole circle
 		(at 11.43 0)
@@ -112,7 +112,7 @@
 		(drill 1.4)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
-		(uuid "d23b9bd0-0c30-4a48-b0e2-7db56b8b2973")
+		(uuid "f1519368-dd11-46a2-9137-6b51ff830c3b")
 	)
 	(embedded_fonts no)
 	(model "${KIPRJMOD}/lib/c6er.3dshapes/WJ15EDGRC-3.81-04P.step"

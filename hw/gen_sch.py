@@ -290,6 +290,7 @@ def write_project():
                       "min_hole_to_hole": 0.25, "min_through_hole_diameter": 0.3, "min_track_width": 0.15,
                       "min_via_annular_width": 0.13, "min_via_diameter": 0.5, "min_silk_clearance": 0.0,
                       "solder_mask_to_copper_clearance": 0.0, "use_height_for_length_calcs": True},
+            "rule_severities": {"hole_to_hole": "error"},
             "track_widths": [0.0, 0.2, 0.3, 0.5, 1.0, 2.5],
             "via_dimensions": [{"diameter": 0.0, "drill": 0.0}, {"diameter": 0.6, "drill": 0.3}],
         }},

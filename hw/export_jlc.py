@@ -81,9 +81,12 @@ def cpl():
         w.writerow(["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
         for c in placed():
             fp = fps[c.ref]
-            pos = fp.GetPosition()
-            x = pos.x / 1e6 - OX
-            y = OY + H - pos.y / 1e6
+            # JLC places by the part's centre: the centre of its pads, not the footprint anchor
+            # (pin 1 on the through-hole parts)
+            xs = [b for p in fp.Pads() for b in (p.GetBoundingBox().GetLeft(), p.GetBoundingBox().GetRight())]
+            ys = [b for p in fp.Pads() for b in (p.GetBoundingBox().GetTop(), p.GetBoundingBox().GetBottom())]
+            x = (min(xs) + max(xs)) / 2e6 - OX
+            y = OY + H - (min(ys) + max(ys)) / 2e6
             rot = (fp.GetOrientationDegrees() + PARTS[c.part].rotation) % 360
             w.writerow([c.ref, f"{x:.3f}mm", f"{y:.3f}mm", "Top", f"{rot:g}"])
 

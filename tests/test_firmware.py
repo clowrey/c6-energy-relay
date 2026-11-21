@@ -45,3 +45,13 @@ def test_esphome_config_valid(tmp_path):
         assert r.returncode == 0, (r.stdout[-3000:] + r.stderr[-3000:])
     finally:
         shutil.rmtree(work, ignore_errors=True)
+
+
+def test_energy_uses_power_calibration():
+    """Energy is power x time: each energy sensor must carry the same factor as its power sensor."""
+    text = YAML.read_text()
+    for sensor, cal in (("energy_1", "power1_cal"), ("energy_2", "power2_cal")):
+        block = re.search(rf"^\s*{sensor}:\n((?:\s{{6,}}.*\n)+)", text, re.M)
+        assert block and f"multiply: ${{{cal}}}" in block.group(1), sensor
+    block = re.search(r"^\s*energy_total:\n((?:\s{6,}.*\n)+)", text, re.M)
+    assert block and "multiply" in block.group(1)

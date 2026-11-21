@@ -60,7 +60,8 @@ sensors, `Relay 1` / `Relay 2` switches (off after a reboot), the status LED and
 and `ap_password`, then flash over USB-C (native USB, no buttons needed) and use OTA after that.
 
 **Calibration:** with a known resistive load and a meter, set the `*_cal` substitutions to
-(meter reading / reported value). The voltage factor starts at 1.13 because this board loads the
+(meter reading / reported value); the energy sensors use the power factors. The voltage factor
+starts at 1.13 because this board loads the
 ZMPT107 with 22 R where Seeed's meter uses 24.9 R.
 
 | GPIO | Use | GPIO | Use |
@@ -80,7 +81,8 @@ Files are in [`hw/out/jlc`](hw/out/jlc):
 1. PCB: upload `gerbers.zip` (2 layers, 1.6 mm, 1 oz, any colour, HASL).
 2. Assembly: **Standard PCBA** (the board has through-hole parts), top side, upload `bom.csv` and
    `cpl.csv`. Check every part's orientation in JLC's placement preview before paying, above all the
-   ESP32-C6 module, USB-C, the diodes, the BL0939 and the SOT-23 parts.
+   ESP32-C6 module, USB-C, the BL0939, the LDO (U3) and ESD chip (U4: 180 degrees off shorts VBUS
+   to GND), the diodes, the transistors and both buttons (90 degrees off holds EN or BOOT low).
 3. Plugs: add the loose plugs from `plugs.csv` to the same order as parts (3 x DB2EK-5.08-2P and
    1 x WJ15EDGK-3.81-4P per board).
 
@@ -103,7 +105,7 @@ Cost estimate (live part prices on 2026-11-21; fees, PCB and shipping are estima
   the bottom. Lever the latch out with a screwdriver in the lower slot to take it off the rail.
 - **cover**: the front shell. The board screws to its four pillars from the solder side
   (4 x M3 x 8, self-tapping into 2.8 mm holes); the base then screws onto the cover from the back
-  (4 x M3 x 6 into the corner bosses). The plugs stick out through the bottom wall, USB-C through
+  (4 x M3 x 4 into the corner bosses). The plugs stick out through the bottom wall, USB-C through
   the top. The front face is closed; the status LED shows through a 0.6 mm window.
 
 Print in PETG (the latch flexes), 0.2 mm layers, 3 walls, no supports: the base flat on its inside

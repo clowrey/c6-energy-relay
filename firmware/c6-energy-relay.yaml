@@ -4,7 +4,7 @@
 # BOOT button. Logs go to the native USB port (USB Serial/JTAG), which leaves UART0 to the BL0939.
 #
 # Calibrate once with a known load and a meter: set the *_cal substitutions to
-# (meter reading / reported value). This board uses a 22 ohm ZMPT107 load (Seeed's meter: 24.9 ohm),
+# (meter reading / reported value). The energy sensors use the power factors. This board uses a 22 ohm ZMPT107 load (Seeed's meter: 24.9 ohm),
 # so the voltage factor is about 24.9 / 22 = 1.13 before calibration. At 120 V line-neutral the signal
 # is half the 240 V one; the same calibration covers both.
 # If a channel reads negative power, turn the CT round (or swap its two wires).
@@ -87,10 +87,16 @@ sensor:
         - multiply: ${power2_cal}
     energy_1:
       name: Energy 1
+      filters:
+        - multiply: ${power1_cal}
     energy_2:
       name: Energy 2
+      filters:
+        - multiply: ${power2_cal}
     energy_total:
       name: Energy Total
+      filters:
+        - multiply: ${power1_cal}   # one factor for the sum: calibrate both channels alike
   - platform: wifi_signal
     name: WiFi Signal
     update_interval: 60s

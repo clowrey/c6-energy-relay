@@ -79,6 +79,12 @@ def stitch_ground(board, pitch=4.0, margin=0.75):
         return 0
     ring = [(0, 0)] + [(margin * math.cos(a * math.pi / 4), margin * math.sin(a * math.pi / 4)) for a in range(8)]
     vias = [(t.GetPosition().x, t.GetPosition().y) for t in board.GetTracks() if t.GetClass() == "PCB_VIA"]
+    keep_out = []   # pads and holes grown by 1 mm: no stitching via next to them
+    for fp in board.GetFootprints():
+        for p in fp.Pads():
+            bb = p.GetBoundingBox()
+            bb.Inflate(MM(1.0))
+            keep_out.append(bb)
     added = 0
     from hw.gen_pcb import W, H
     y = pitch / 2
@@ -88,7 +94,8 @@ def stitch_ground(board, pitch=4.0, margin=0.75):
             pts = [pcbnew.VECTOR2I(MM(OX + x + dx), MM(OY + y + dy)) for dx, dy in ring]
             if all(fills[pcbnew.F_Cu].Contains(p) and fills[pcbnew.B_Cu].Contains(p) for p in pts):
                 cx, cy = MM(OX + x), MM(OY + y)
-                if all((cx - vx) ** 2 + (cy - vy) ** 2 > MM(1.2) ** 2 for vx, vy in vias):
+                if all((cx - vx) ** 2 + (cy - vy) ** 2 > MM(1.2) ** 2 for vx, vy in vias) and \
+                        not any(bb.Contains(pcbnew.VECTOR2I(cx, cy)) for bb in keep_out):
                     v = pcbnew.PCB_VIA(board)
                     v.SetPosition(pcbnew.VECTOR2I(cx, cy))
                     v.SetWidth(MM(0.6))
@@ -114,7 +121,36 @@ def main():
     filler.Fill(board.Zones())
     print("stitching vias:", n)
     pcbnew.SaveBoard(str(PCB), board)
+    write_mains_copper(board)
     print("routed and filled", PCB)
+
+
+def write_mains_copper(board):
+    """Add the bounding boxes of all mains copper to board_features.json (case coordinates), so the
+    case keeps its screws away from it."""
+    import json
+    from hw.gen_pcb import FEATURES, H
+    boxes = []
+
+    def add(bb):
+        x0, x1 = bb.GetLeft() / 1e6 - OX, bb.GetRight() / 1e6 - OX
+        y0, y1 = H - (bb.GetBottom() / 1e6 - OY), H - (bb.GetTop() / 1e6 - OY)
+        boxes.append([round(x0, 3), round(y0, 3), round(x1, 3), round(y1, 3)])
+
+    mains = ("MAINS", "RELAY")
+    for fp in board.GetFootprints():
+        for p in fp.Pads():
+            if p.GetNetname() and p.GetNetClassName().startswith(mains):
+                add(p.GetBoundingBox())
+    for t in board.GetTracks():
+        if t.GetNetClassName().startswith(mains):
+            add(t.GetBoundingBox())
+    for z in board.Zones():
+        if not z.GetIsRuleArea() and z.GetNetClassName().startswith(mains):
+            add(z.GetBoundingBox())
+    feats = json.loads(FEATURES.read_text())
+    feats["mains_copper"] = boxes
+    FEATURES.write_text(json.dumps(feats, indent=1), encoding="utf8")
 
 
 if __name__ == "__main__":
