@@ -193,9 +193,8 @@ board and the open back, and a test checks that.
 
 Print in PETG (the latch has to flex): 0.2 mm layers, 3 walls, no supports. Print the cover on its
 front face, the base on its back face (standoffs up) and the clip on its flat face (hook and latch
-up), so the spring beams bend along the layers. PETG isn't flame-retardant, which is one more reason
-to mount the case inside a closed enclosure; a flame-retardant filament is better still. STEP files
-and print-oriented STL files are in [`case/out`](case/out).
+up), so the spring beams bend along the layers. STEP files and print-oriented STL files are in
+[`case/out`](case/out).
 
 ## Safety
 
