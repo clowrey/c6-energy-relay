@@ -26,7 +26,7 @@ contactor coils). It is designed for JLCPCB to build fully assembled. It sits on
 | Terminals | all pluggable: 3 × 5.08 mm 15 A (mains in, relay 1, relay 2), 1 × 3.81 mm 4-pole (CTs) |
 | GPIO | every unused GPIO on a 2 × 9 header footprint (holes only, nothing fitted) |
 | Board | 80 × 80 mm, 2 layers, every part on the top side |
-| Cost | about $16.00 a board for 30, $12.30 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
+| Cost | about $15.90 a board for 30, $12.30 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
 
 **Contents:** [How it works](#how-it-works) · [Schematic](#schematic) · [Circuit board](#circuit-board) ·
 [Case](#case) · [Safety](#safety) · [Wiring](#wiring) · [Firmware](#firmware) ·
@@ -61,7 +61,7 @@ board the two sides are kept 6.5 mm apart.
   the ESP32 boots) with a 1N4148W flyback diode. GPIO22 and
   GPIO23 drive them. The contacts are dry: COM and NO go to their own terminal and switch whatever
   you wire through them.
-- **USB-C** goes straight to the ESP32-C6's native USB (GPIO12/13, with a USBLC6-2SC6 ESD protector),
+- **USB-C** goes straight to the ESP32-C6's native USB (GPIO12/13, through 22 Ω series resistors; there is no ESD protection chip),
   for flashing and logs without a USB-serial chip or buttons.
 
 ## Schematic
@@ -92,7 +92,7 @@ label.
 
 ![Power](docs/img/sch_power.png)
 
-**USB-C** (native USB, ESD protection, the SS14 power diode)
+**USB-C** (native USB, series resistors, the SS14 power diode)
 
 ![USB-C](docs/img/sch_usb.png)
 
@@ -156,7 +156,9 @@ and stitched with vias.
 | ![F.Silkscreen](docs/img/layer_f_silk.png) | ![F.Mask](docs/img/layer_f_mask.png) |
 
 The GPIO header (J6) carries 3V3, 5V, GND and GPIO 0, 1, 3, 4, 5, 6, 7, 8, 14, 15, 18, 19, 20 and 21.
-The silkscreen marks the strapping pins (4, 5, 8, 15) with `*`.
+The silkscreen marks the strapping pins (4, 5, 8, 15) with `*`. The top side names each plug: the CT pins
+behind their terminal, `RELAY 1` / `RELAY 2` with `COM NO` (left pin first) beside theirs, `MAINS` and `USB`.
+The bottom side names every terminal pin.
 
 ## Case
 
@@ -166,7 +168,8 @@ Three printed parts, built in build123d from the board's own dimensions ([`case/
   stick out through openings in the bottom wall and USB-C through the top; the wall is solid below the
   board, so nothing slips in under it to the mains solder joints. There are vents over the power
   module and beside the relays. The front face is closed; a short tube carries the status LED's light
-  to a 0.6 mm thin window.
+  to a 0.6 mm thin window. The front face names every opening and its pins (MAINS L N, RELAY 1 and 2
+  COM NO, CT1 and CT2 + −, USB), cut 0.4 mm deep.
 - **Base:** the sealed back plate. Its only openings are the four screw holes, so nothing pushed in
   from the back (a screwdriver, the metal DIN rail) can reach the mains parts behind the board. A
   standoff rises from it to each mounting hole, and a rim locates it inside the cover's walls. A
@@ -273,22 +276,22 @@ The order files are in [`hw/out/jlc`](hw/out/jlc):
    the right way. Pay most attention to:
    - the ESP32-C6 module and USB-C;
    - the BL0939;
-   - the LDO (U3) and the ESD chip (U4). U4 placed 180° off shorts USB power to ground;
+   - the LDO (U3);
    - the diodes and transistors, and the polymer capacitor (C14): its + side faces the HLK-PM01;
    - both buttons. A button turned 90° holds EN or BOOT low.
 4. **Plugs:** add the loose plugs from `plugs.csv` to the same order as parts: 3 × DB2EK-5.08-2P and
    1 × WJ15EDGK-3.81-4P per board.
 
-Cost estimate from [`cost.md`](hw/out/jlc/cost.md). Part prices are live JLC prices from 2026-11-21;
+Cost estimate from [`cost.md`](hw/out/jlc/cost.md). Part prices are live JLC prices from 2026-11-22;
 the fees, PCB and shipping figures are estimates, so check the real quote.
 
 | Boards | Total | Per board |
 |---|---|---|
-| 10 | $234 | $23.41 |
-| 20 | $372 | $18.58 |
-| 30 | $481 | $16.03 |
-| 50 | $708 | $14.15 |
-| 100 | $1232 | $12.32 |
+| 10 | $231 | $23.07 |
+| 20 | $368 | $18.39 |
+| 30 | $477 | $15.89 |
+| 50 | $702 | $14.05 |
+| 100 | $1226 | $12.26 |
 
 The most expensive parts per board, at 30 boards:
 
@@ -300,7 +303,7 @@ The most expensive parts per board, at 30 boards:
 | BL0939 | $0.68 |
 | ZMPT107-1 | $0.42 |
 
-The 15 Extended parts add $3 each per order.
+The 14 Extended parts add $3 each per order.
 
 ## Building it from source
 

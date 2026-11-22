@@ -24,7 +24,8 @@ between the standoffs and the pillars. Nothing inside the walls sits between the
 back, so the board drops straight in. The screw heads sit flush in the clip; the holes keep 6.5 mm
 from mains copper, so a screw you can touch is as far from mains as the low-voltage side.
 Assembly: cover face down, board in (components down) onto the pillars, base on, clip on, four screws.
-Nothing opens on the front face: the status LED shows through a 0.6 mm thin window.
+Nothing opens on the front face: the status LED shows through a 0.6 mm thin window. The front face says
+what each opening is (MAINS L N, RELAY 1 / 2 COM NO, CT1 / CT2 + -, USB), cut 0.4 mm deep.
 
 Printing, PETG (the latch flexes); 0.2 mm layers, 3 walls:
   cover  on its front face (walls and LED tube up), no supports
@@ -40,8 +41,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from build123d import (Align, Axis, Box, Cone, Cylinder, Location, Plane, Polygon, Pos, Rectangle,
-                       RectangleRounded, Rot, export_step, export_stl, extrude, loft)
+from build123d import (Align, Axis, Box, Cone, Cylinder, FontStyle, Location, Plane, Polygon, Pos, Rectangle,
+                       RectangleRounded, Rot, Text, export_step, export_stl, extrude, loft)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -71,6 +72,18 @@ LED_WINDOW_D = 3.5            # thinned window diameter in the front face
 LED_TUBE_ID = 5.0             # hollow light tube inner diameter behind the LED window
 LED_TUBE_WALL = 1.2           # hollow light tube wall thickness
 LED_TUBE_Z0 = 5.0             # bottom of the light tube (clear above the status LED)
+LABEL_DEPTH = 0.4             # labels are cut this deep into the front face (two layers; it prints face down)
+LABEL_FONT = "Arial"
+LABEL_PIN, LABEL_NAME, LABEL_NOTE = 3.0, 3.2, 2.8   # font sizes: pin names, plug names, the mains rating
+LABEL_GAP = 0.8               # least space between two labels in a row
+LABEL_ROWS = (2.2, 6.0, 9.6)  # y of the pin names, the plug names and the mains rating, above the plug row
+# plug -> (names: (text, first pin, last pin) centred over those pins; pin names left to right; pitch)
+LABELS = {
+    "J1": ((("MAINS", 0, 1),), ("L", "N"), 5.08),
+    "J2": ((("RELAY 1", 0, 1),), ("COM", "NO"), 5.08),
+    "J3": ((("RELAY 2", 0, 1),), ("COM", "NO"), 5.08),
+    "J4": ((("CT1", 0, 1), ("CT2", 2, 3)), ("+", "-", "+", "-"), 3.81),
+}
 
 # TS35 rail: flanges 35 mm apart (outer edges), 1.0 mm thick
 RAIL_SPAN = 35.2              # hook face to latch face
@@ -136,6 +149,44 @@ def one_solid(shape):
     return solids[0]
 
 
+def _text(s, size):
+    return Text(s, font_size=size, font=LABEL_FONT, font_style=FontStyle.BOLD)
+
+
+def lid_labels(f):
+    """-> [(text, x, y, font size, width)]: what each opening is, on the front face beside it. Pin names sit
+    over their pins; two that would touch are pushed apart by the same amount."""
+    w, h = f["outline_mm"]
+    out = []
+    for c in f["connectors"]:
+        if c["ref"] not in LABELS:
+            continue
+        names, pins, pitch = LABELS[c["ref"]]
+        xs = [c["x"] + i * pitch for i in range(len(pins))]
+        ws = [_text(p, LABEL_PIN).bounding_box().size.X for p in pins]
+        for _ in range(8):
+            for i in range(len(xs) - 1):
+                lack = LABEL_GAP - ((xs[i + 1] - ws[i + 1] / 2) - (xs[i] + ws[i] / 2))
+                if lack > 0:
+                    xs[i] -= lack / 2
+                    xs[i + 1] += lack / 2
+        out += [(p, x, LABEL_ROWS[0], LABEL_PIN, wd) for p, x, wd in zip(pins, xs, ws)]
+        for name, a, b in names:
+            out.append((name, c["x"] + (a + b) / 2 * pitch, LABEL_ROWS[1], LABEL_NAME, None))
+        if c["ref"] == "J1":
+            out.append(("100-240V~", c["x"] + pitch / 2, LABEL_ROWS[2], LABEL_NOTE, None))
+    usb = next(c for c in f["connectors"] if c["kind"] == "usbc")
+    out.append(("USB", usb["x"], h - LABEL_ROWS[0], LABEL_NAME, None))
+    return [(s, x, y, size, wd if wd is not None else _text(s, size).bounding_box().size.X)
+            for s, x, y, size, wd in out]
+
+
+def label_solids(f):
+    """The labels as cutting tools: LABEL_DEPTH into the front face, read from the front."""
+    return [extrude(Plane.XY.offset(Z_FRONT_OUT - LABEL_DEPTH) * Pos(x, y) * _text(s, size), LABEL_DEPTH + 0.5)
+            for s, x, y, size, _ in lid_labels(f)]
+
+
 def build_cover(f):
     w, h = f["outline_mm"]
     x0, x1, y0, y1 = -GAP - WALL, w + GAP + WALL, -GAP - WALL, h + GAP + WALL
@@ -183,7 +234,10 @@ def build_cover(f):
     # LED tube bore and 0.6 mm thinned window in the front face
     cover -= cyl(lx, ly, LED_TUBE_ID, LED_TUBE_Z0 - 0.5, Z_FRONT_IN)
     cover -= cyl(lx, ly, LED_WINDOW_D, Z_FRONT_IN - 0.1, Z_FRONT_OUT - LED_WINDOW)
-    return one_solid(cover)
+    cover = one_solid(cover)
+    for label in label_solids(f):
+        cover = one_solid(cover - label)
+    return cover
 
 
 def build_base(f):

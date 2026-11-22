@@ -84,7 +84,7 @@ def test_pilot_holes(parts):
 def test_front_face_closed(parts):
     _, lid, _ = parts
     w, h = FEATURES["outline_mm"]
-    z = case.Z_FRONT_OUT - 0.3
+    z = case.Z_FRONT_OUT - case.LABEL_DEPTH - 0.1      # behind the labels, inside the LED window's skin
     for i in range(0, int(w) + 1, 2):
         for j in range(0, int(h) + 1, 2):
             assert lid.is_inside(Vector(i, j, z)), (i, j)
@@ -383,3 +383,31 @@ def test_led_light_tube(parts):
     assert cover.is_inside(Vector(lx, h + case.GAP + 0.1, 13.0))
     assert not cover.is_inside(Vector(lx, ly, case.Z_FRONT_OUT - case.LED_WINDOW - 0.2))
     assert cover.is_inside(Vector(lx, ly, case.Z_FRONT_OUT - case.LED_WINDOW / 2))
+
+
+def test_lid_labels(parts):
+    """The front face names every opening: cut in, never through, inside the face and clear of each other."""
+    _, cover, _ = parts
+    w, h = FEATURES["outline_mm"]
+    labels = case.lid_labels(FEATURES)
+    texts = [l[0] for l in labels]
+    for want in ("MAINS", "L", "N", "RELAY 1", "RELAY 2", "CT1", "CT2", "USB", "100-240V~"):
+        assert want in texts, want
+    assert texts.count("COM") == 2 and texts.count("NO") == 2 and texts.count("+") == 2 and texts.count("-") == 2
+    for solid in case.label_solids(FEATURES):
+        assert _overlap(cover, solid) < 1e-3
+    boxes = []
+    for s, x, y, size, width in labels:
+        assert cover.is_inside(Vector(x, y, case.Z_FRONT_OUT - case.LABEL_DEPTH - 0.2)), s
+        box = (x - width / 2, y - size / 2, x + width / 2, y + size / 2)
+        assert box[0] > -case.GAP and box[2] < w + case.GAP and -case.GAP < y < h + case.GAP, s
+        for other, o in boxes:
+            assert box[2] < o[0] or o[2] < box[0] or box[3] < o[1] or o[3] < box[1], (s, other)
+        boxes.append((s, box))
+    # pin names in the plugs' own order, each over (or pushed evenly off) its pin
+    for c in FEATURES["connectors"]:
+        if c["ref"] in case.LABELS:
+            _, pins, pitch = case.LABELS[c["ref"]]
+            row = sorted((l for l in labels if l[2] == case.LABEL_ROWS[0]
+                          and c["x"] - pitch < l[1] < c["x"] + len(pins) * pitch), key=lambda l: l[1])
+            assert [l[0] for l in row] == list(pins), c["ref"]

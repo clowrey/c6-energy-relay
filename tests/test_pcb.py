@@ -311,3 +311,10 @@ def test_plug_openings_start_at_the_board(features):
             z0, z1 = c["plug_envelope"][2], c["plug_envelope"][5]
             assert z0 >= 1.5, c["ref"]
             assert z1 >= (17.2 if c["kind"] == "term508" else 13.6), c["ref"]
+
+
+def test_top_side_names_the_plugs():
+    """The top silkscreen says what each plug is: CT pins, both relays with their pin order, mains, USB."""
+    text = (HW / "c6-energy-relay.kicad_pcb").read_text(encoding="utf8")
+    for label in ("CT1+", "CT1-", "CT2+", "CT2-", "RELAY 1", "RELAY 2", "COM NO", "MAINS", "100-240V~", "USB"):
+        assert f'(gr_text "{label}"' in text, label

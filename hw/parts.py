@@ -44,8 +44,6 @@ _LIST = [
          extra={"body_mm": (18.4, 10.2, 15.5), "coil_mw": 400, "contact_a": 16, "hipot_kv": 4}),
     Part("usbc", "C165948", "Connector:USB_C_Receptacle_USB2.0_16P",
          "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12", "USB-C", mpn="TYPE-C-31-M-12"),
-    Part("esd", "C2687116", "Power_Protection:USBLC6-2SC6", "Package_TO_SOT_SMD:SOT-23-6", "USBLC6-2SC6",
-         rotation=180, mpn="USBLC6-2SC6"),
     Part("ldo", "C51118", "Regulator_Linear:AP2112K-3.3", "Package_TO_SOT_SMD:SOT-23-5", "AP2112K-3.3",
          rotation=180, mpn="AP2112K-3.3TRG1",
          extra={"dropout_mv": 250, "dropout_at_ma": 600, "imax_ma": 600}),  # datasheet: 250 mV typ @ 600 mA
@@ -74,7 +72,7 @@ _LIST = [
     Part("r470", "C23179", "Device:R", _R0603, "470R", per_board=3),
     Part("r10k", "C25804", "Device:R", _R0603, "10k", per_board=6),
     Part("r5k1", "C23186", "Device:R", _R0603, "5.1k", per_board=3),
-    Part("r22", "C23345", "Device:R", _R0603, "22R 1%", per_board=1),
+    Part("r22", "C23345", "Device:R", _R0603, "22R 1%", per_board=3),
     Part("r27k", "C137340", "Device:R", "Resistor_SMD:R_1206_3216Metric", "27k 1206", per_board=4,
          mpn="RC1206FR-0727KL"),  # 200 V each; 4 x 27k = 108k feeds the ZMPT107 2.2 mA at 240 V
     Part("r0r3", "C59882", "Device:R", "Resistor_SMD:R_1206_3216Metric", "0.3R 1%", per_board=4),

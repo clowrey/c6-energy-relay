@@ -103,3 +103,13 @@ def test_vbus_bleed():
     """The Schottky leaks +5V back into VBUS: a resistor keeps an unplugged USB port's VBUS near 0 V."""
     bleeds = [c for c in design.COMPONENTS if c.ref.startswith("R") and set(c.pins.values()) == {"VBUS", "GND"}]
     assert len(bleeds) == 1 and PARTS[bleeds[0].part].value == "5.1k"
+
+
+def test_usb_series_resistors():
+    """Each USB data line reaches the module through one 22-33 ohm resistor (Espressif's guideline); no ESD chip."""
+    for sock, chip in (("USB_CDP", "USB_DP"), ("USB_CDN", "USB_DN")):
+        rs = [c for c in design.COMPONENTS if set(c.pins.values()) == {sock, chip}]
+        assert len(rs) == 1 and PARTS[rs[0].part].value.startswith("22R")
+        assert {r for r, _ in design.NETS[sock]} == {"J5", rs[0].ref}
+        assert {r for r, _ in design.NETS[chip]} == {"U1", rs[0].ref}
+    assert "esd" not in PARTS

@@ -65,7 +65,7 @@ PLACE = {
     "C6": (12.8, 27.0, 0), "R16": (20.1, 34.635, 270), "R17": (20.1, 29.5, 270),
     "TP1": (19.5, 40.8, 0), "TP2": (14.5, 40.8, 0), "TP3": (17.0, 40.8, 0),
     # ---- USB, power ----------------------------------------------------------------------------
-    "J5": (11.0, 4.2, 180), "U4": (11.0, 11.8, 0), "R20": (18.5, 7.2, 0), "R21": (5.6, 11.6, 270),
+    "J5": (11.0, 4.2, 180), "R28": (10.0, 11.6, 270), "R29": (12.0, 11.6, 270), "R20": (18.5, 7.2, 0), "R21": (5.6, 11.6, 270),
     "D1": (20.5, 11.8, 180), "R27": (18.5, 15.4, 270),
     "U3": (44.0, 12.2, 0), "C8": (43.2, 15.1, 0), "C10": (45.5, 7.6, 90), "C12": (44.8, 18.2, 90),
     "C14": (37.5, 11.0, 90),
@@ -369,6 +369,8 @@ def build() -> pcbnew.BOARD:
             tight_courtyard(fp)
         fp.Reference().SetTextSize(pcbnew.VECTOR2I(MM(0.8), MM(0.8)))
         fp.Reference().SetTextThickness(MM(0.12))
+        if c.ref in ("J1", "J2", "J3", "J4", "J5"):      # these carry what they are for instead (labels())
+            fp.Reference().SetVisible(False)
 
     for i, (x, y) in enumerate(HOLES, start=1):
         fp = load_fp("MountingHole:MountingHole_3.2mm_M3")
@@ -509,7 +511,8 @@ def silkscreen(board):
             break
     else:
         raise AssertionError("no free spot for the board title")
-    text(board, "MAINS 100-240V~", 45.6, 72.6, 0.9, rot=90, bold=True)
+    text(board, "MAINS", 39.2, 74.5, 0.9, rot=90, bold=True)
+    text(board, "100-240V~", 40.7, 74.5, 0.9, rot=90, bold=True)
     # the bottom side under the mains area is bare, so the full warning goes there
     warn = text(board, "DANGER: MAINS VOLTAGE", 34.0, 57.5, 1.5, layer=B, bold=True)
     keep = text(board, "keep 6.5 mm clear, no metal near", 34.0, 60.0, 1.0, layer=B)
@@ -536,7 +539,14 @@ def silkscreen(board):
     text(board, "N/L2", 35.08, 66.3, 0.8, bold=True)
     text(board, "RELAY 1", PLACE["K1"][0], 75.8, 1.0, layer=B, bold=True)
     text(board, "RELAY 2", PLACE["K2"][0], 75.8, 1.0, layer=B, bold=True)
-    text(board, "CT", 9.0, 62.6, 0.9, bold=True)
+    # what each plug is, on the top side: the CT pins above their filter resistors, the relays beside their
+    # headers (left pin first), USB beside its socket
+    for i, lab in enumerate(("CT1+", "CT1-", "CT2+", "CT2-")):
+        text(board, lab, PLACE["J4"][0] + i * 3.81, 62.0, 0.8, bold=True)
+    for ref, name, x in (("J2", "RELAY 1", 44.5), ("J3", "RELAY 2", 63.0)):
+        text(board, name, x, 74.4, 0.8, bold=True)
+        text(board, "COM NO", x, 76.0, 0.8, bold=True)
+    text(board, "USB", 19.2, 3.0, 1.0, bold=True)
     # GPIO header pin names: odd row (y0) labelled below it, even row (y0 - 2.54) above it
     x0, y0, _ = PLACE["J6"]
     strap = {"IO4", "IO5", "IO8", "IO15"}

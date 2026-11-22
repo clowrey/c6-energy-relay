@@ -88,12 +88,13 @@ COMPONENTS: list[Comp] = [
     # ---- USB-C, ESD, 5 V OR-ing, 3.3 V LDO -----------------------------------------------------
     C("J5", "usbc", {"A4": "VBUS", "A9": "VBUS", "B4": "VBUS", "B9": "VBUS",
                      "A1": "GND", "A12": "GND", "B1": "GND", "B12": "GND", "SH": "GND",
-                     "A5": "CC1", "B5": "CC2", "A6": "USB_DP", "B6": "USB_DP", "A7": "USB_DN", "B7": "USB_DN"},
+                     "A5": "CC1", "B5": "CC2", "A6": "USB_CDP", "B6": "USB_CDP", "A7": "USB_CDN", "B7": "USB_CDN"},
       block="usb"),
     C("R20", "r5k1", {"1": "CC1", "2": "GND"}, block="usb"),
     C("R21", "r5k1", {"1": "CC2", "2": "GND"}, block="usb"),
-    C("U4", "esd", {"1": "USB_DN", "6": "USB_DN", "3": "USB_DP", "4": "USB_DP", "2": "GND", "5": "VBUS"},
-      block="usb"),
+    # series resistors on the data lines (Espressif asks for 22-33 ohm); no ESD chip
+    C("R28", "r22", {"1": "USB_CDP", "2": "USB_DP"}, block="usb"),
+    C("R29", "r22", {"1": "USB_CDN", "2": "USB_DN"}, block="usb"),
     C("D1", "schottky", {"1": "+5V", "2": "VBUS"}, block="usb"),
     C("R27", "r5k1", {"1": "VBUS", "2": "GND"}, block="usb"),       # bleeds D1's reverse leakage
     C("U3", "ldo", {"1": "+5V", "3": "+5V", "2": "GND", "5": "3V3"}, block="power"),

@@ -412,6 +412,14 @@
       },
       {
         "netclass": "LV",
+        "pattern": "/USB_CDN"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "/USB_CDP"
+      },
+      {
+        "netclass": "LV",
         "pattern": "/USB_DN"
       },
       {
