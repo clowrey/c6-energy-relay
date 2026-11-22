@@ -188,7 +188,7 @@ def test_din_latch_moves(parts):
     # the pull tab reaches past the case's bottom edge, with a screwdriver slot
     y_edge = -case.GAP - case.WALL
     assert clip.is_inside(Vector(cx + case.TAB_W / 2 - 0.5, y_edge - case.TAB_OUT + 0.3, zm))
-    assert not clip.is_inside(Vector(cx, y_edge - case.TAB_OUT + 0.6 + case.PRY_SLOT[1] / 2, zm))
+    assert not clip.is_inside(Vector(cx, y_edge - case.TAB_OUT + case.TAB_BAR + case.PRY_SLOT[1] / 2, zm))
 
 
 def test_back_sealed(parts):
@@ -207,8 +207,7 @@ def test_back_sealed(parts):
 
 
 def test_parts_print_flat(parts):
-    """No supports: the base prints on its flat back face (nothing below it), the clip on its flat face
-    against the base (nothing above it), the cover on its flat front face."""
+    """Base prints on its flat back face, clip on its flat base-side face, cover on its flat front face."""
     base, cover, clip = parts
     assert abs(base.bounding_box().min.Z - case.Z_BACK_OUT) < 1e-3
     assert abs(clip.bounding_box().max.Z - case.Z_BACK_OUT) < 1e-3
@@ -224,3 +223,163 @@ def test_parts_dont_collide(parts):
     assert _overlap(base, cover) < 0.01, _overlap(base, cover)
     assert _overlap(clip, base) < 0.01, _overlap(clip, base)
     assert _overlap(clip, cover) < 0.01, _overlap(clip, cover)
+
+
+def test_pull_tab_strong(parts):
+    """Pull tab is at least 10 mm wide, projects at least 4.5 mm past the bottom edge, and keeps at
+    least 2.2 mm of solid plastic around the screwdriver slot on every side."""
+    clip = parts[2]
+    w, _ = FEATURES["outline_mm"]
+    cx = w / 2
+    sx, sy = case.PRY_SLOT
+    assert case.TAB_W >= 10.0
+    assert case.TAB_OUT >= 4.5
+    assert sx >= 4.5 and sy >= 1.6
+    assert case.TAB_BAR >= 2.2
+    assert (case.TAB_W - sx) / 2 >= 2.2
+    zm = (case.Z_CLIP_OUT + case.Z_BACK_OUT) / 2
+    y_edge = -case.GAP - case.WALL
+    slot_y0 = y_edge - case.TAB_OUT + case.TAB_BAR
+    slot_y1 = slot_y0 + sy
+    slot_ym = (slot_y0 + slot_y1) / 2
+    # screwdriver slot is open across its width
+    for dx in (-sx / 2 + 0.3, 0.0, sx / 2 - 0.3):
+        assert not clip.is_inside(Vector(cx + dx, slot_ym, zm)), dx
+    # at least 2.2 mm of solid plastic around the slot on every side
+    for d in (0.3, 2.0):
+        assert clip.is_inside(Vector(cx, slot_y0 - d, zm)), ("below", d)
+        assert clip.is_inside(Vector(cx, slot_y1 + d, zm)), ("above", d)
+        assert clip.is_inside(Vector(cx - sx / 2 - d, slot_ym, zm)), ("left", d)
+        assert clip.is_inside(Vector(cx + sx / 2 + d, slot_ym, zm)), ("right", d)
+
+
+def test_base_relief_pocket(parts):
+    """The base's back face has a 0.4 mm relief pocket across the whole area swept by the clip's moving
+    parts (+ 1.5 mm margin), while staying solid behind the pocket and flat everywhere else."""
+    base = parts[0]
+    w, _ = FEATURES["outline_mm"]
+    g = case.latch_geometry(w)
+    cx = w / 2
+    assert case.BASE_RELIEF >= 0.4
+    assert case.RELIEF_MARGIN >= 1.5
+    z_clear = case.Z_BACK_OUT + 0.2
+    z_solid = case.Z_BACK_OUT + case.BASE_RELIEF + 0.2
+    swept_points = (
+        (case.BEAM_X0 + 3.0, g["s_hi"] - 1.0),                              # left beam
+        (case.BEAM_X1 - 3.0, g["s_lo"] + 1.0),                              # right beam
+        (cx, (g["s_lo"] + g["s_hi"]) / 2),                                  # shuttle at rest
+        (cx, g["s_lo"] - case.LATCH_TRAVEL),                                # shuttle at full travel
+        (cx, 5.0),                                                          # pull tab mid-channel
+        (cx, -1.0),                                                         # pull tab at bottom edge
+        (case.BEAM_X0 - 1.0, g["cut_hi"] + 1.0),                            # beam + slot margin
+        (cx + case.TAB_W / 2 + case.SLOT_PLAY + 1.0, 5.0),                  # tab channel margin
+    )
+    for px, py in swept_points:
+        assert not base.is_inside(Vector(px, py, z_clear)), (px, py)
+        assert base.is_inside(Vector(px, py, z_solid)), (px, py)
+    # fixed areas outside the pocket stay flush at Z_BACK_OUT so the base prints flat
+    for px, py in ((10.0, 50.0), (10.0, 5.0), (70.0, 5.0)):
+        assert base.is_inside(Vector(px, py, z_clear)), (px, py)
+
+
+def test_z_retention(parts):
+    """Two bridged straps retain the pull tab in -z with >= 0.4 mm play in every direction, full latch
+    travel, <= 1.6 mm protrusion past Z_CLIP_OUT, and clear of the DIN rail and screws."""
+    clip = parts[2]
+    w, _ = FEATURES["outline_mm"]
+    g = case.latch_geometry(w)
+    cx = w / 2
+    assert case.STRAP_GAP >= 0.4
+    assert case.STRAP_GAP + case.STRAP_T <= 1.6 + 1e-6
+    assert case.STRAP_W <= 10.0
+    z_strap = case.Z_CLIP_OUT - case.STRAP_GAP - case.STRAP_T / 2
+    for sy in case.STRAP_YS:
+        # strap sits behind the tab in -z, without exceeding 1.6 mm beyond Z_CLIP_OUT
+        assert clip.is_inside(Vector(cx, sy, z_strap)), sy
+        assert not clip.is_inside(Vector(cx, sy, case.Z_CLIP_OUT - 1.7)), sy
+        # at least 0.4 mm of z-play between tab outer face and strap underside
+        assert clip.is_inside(Vector(cx, sy, case.Z_CLIP_OUT + 0.5)), sy
+        assert not clip.is_inside(Vector(cx, sy, case.Z_CLIP_OUT - 0.1)), sy
+        assert not clip.is_inside(Vector(cx, sy, case.Z_CLIP_OUT - 0.35)), sy
+        # at least 0.4 mm of x-play on each side of the tab inside the strap arch
+        for side in (-1, 1):
+            assert not clip.is_inside(Vector(cx + side * (case.TAB_W / 2 + 0.2), sy, case.Z_CLIP_OUT - 0.2))
+            assert not clip.is_inside(Vector(cx + side * (case.TAB_W / 2 + 0.35), sy, case.Z_CLIP_OUT - 0.2))
+        # clear of the rail lower flange and of the shuttle over its full travel
+        assert sy + case.STRAP_W / 2 < case.RAIL_Y - 17.5
+        assert sy + case.STRAP_W / 2 < g["s_lo"] - case.LATCH_TRAVEL - 0.4
+    assert not clip.is_inside(Vector(cx, g["s_lo"] - case.LATCH_TRAVEL, z_strap))
+
+
+def test_flange_gap(parts):
+    """FLANGE_GAP is 1.6 mm so lips printed with supports clear a 1.0 mm TS35 rail flange."""
+    clip = parts[2]
+    assert abs(case.FLANGE_GAP - 1.6) < 1e-6
+    x, yc = case.RAIL_PROBE_X, case.RAIL_Y
+    ht = yc + case.RAIL_SPAN / 2
+    lt = yc - case.RAIL_SPAN / 2
+    for py in (ht - case.LIP_W / 2, lt + 0.4):
+        assert not clip.is_inside(Vector(x, py, case.Z_CLIP_OUT - 0.2)), py
+        assert not clip.is_inside(Vector(x, py, case.Z_CLIP_OUT - 1.4)), py
+        assert clip.is_inside(Vector(x, py, case.Z_CLIP_OUT - case.FLANGE_GAP - 0.3)), py
+
+
+def test_pillars_fused_to_near_walls(parts):
+    """H3's pillar is too close to the bottom wall (0.3 mm) to print as a gap: it is fused to the wall above
+    the board and open below it, so the board drops in. H2's stays open: side vents are behind it."""
+    _, cover, _ = parts
+    w, _ = FEATURES["outline_mm"]
+    for z in (case.Z_BOARD_TOP + 0.4, 10.0, case.Z_FRONT_IN - 0.5):
+        assert cover.is_inside(Vector(21.0, -0.65, z)), z
+    for z in (0.0, case.Z_BOARD_TOP - 0.4):
+        assert not cover.is_inside(Vector(21.0, -0.65, z)), z
+    assert not cover.is_inside(Vector(w + case.GAP - 0.4, 43.0, 5.0))
+    for i in range(5):                                # every side vent reaches the inside, past H2's pillar
+        vy = 31.0 + i * 3.2 + 0.8
+        for x in (w + case.GAP - 0.4, w + case.GAP + case.WALL / 2):
+            assert not cover.is_inside(Vector(x, vy, 10.0)), (x, vy)
+
+
+def test_no_gap_below_the_board(parts):
+    """Below the board's component side the bottom wall is solid behind every plug opening: nothing pushed in
+    beside a plug gets under the board to the mains solder joints. And the plugs' tops clear the openings."""
+    _, cover, _ = parts
+    for c in FEATURES["connectors"]:
+        if c["edge"] != "bottom":
+            continue
+        x0, _, _, x1, _, z1 = c["plug_envelope"]
+        wy = -case.GAP - case.WALL / 2
+        for k in range(11):
+            x = x0 + (x1 - x0) * k / 10
+            for z in (case.Z_BACK_IN + 0.2, -2.0, 0.0, 0.4):
+                assert cover.is_inside(Vector(x, wy, z)), (c["ref"], x, z)
+            assert not cover.is_inside(Vector(x, wy, z1 + 0.5)), c["ref"]
+
+
+def test_led_light_tube(parts):
+    """Hollow 5.0 mm ID, 1.2 mm wall LED light tube runs from Z_FRONT_IN down to z = 5.0, fused to
+    the top wall, open down its bore, clear below z = 5.0, and closed by the 0.6 mm front window."""
+    _, cover, _ = parts
+    _, h = FEATURES["outline_mm"]
+    lx, ly = FEATURES["led"]
+    assert case.LED_TUBE_ID == 5.0
+    assert case.LED_TUBE_WALL == 1.2
+    assert case.LED_TUBE_Z0 == 5.0
+    r_in = case.LED_TUBE_ID / 2
+    r_mid = r_in + case.LED_TUBE_WALL / 2
+    r_out = r_in + case.LED_TUBE_WALL
+    for z in (case.LED_TUBE_Z0 + 0.5, 13.0, case.Z_FRONT_IN - 0.5):
+        # bore is open
+        assert not cover.is_inside(Vector(lx, ly, z)), z
+        assert not cover.is_inside(Vector(lx + r_in - 0.3, ly, z)), z
+        # solid 1.2 mm tube wall on all four sides
+        for dx, dy in ((r_mid, 0.0), (-r_mid, 0.0), (0.0, r_mid), (0.0, -r_mid)):
+            assert cover.is_inside(Vector(lx + dx, ly + dy, z)), (dx, dy, z)
+        # clear outside the tube on the board-facing side
+        assert not cover.is_inside(Vector(lx, ly - r_out - 0.5, z)), z
+    # clear below z = 5.0 above the LED, fused to the top wall, and 0.6 mm front window intact
+    assert not cover.is_inside(Vector(lx, ly - r_mid, case.LED_TUBE_Z0 - 0.5))
+    assert cover.is_inside(Vector(lx, h + case.GAP - 0.1, 13.0))
+    assert cover.is_inside(Vector(lx, h + case.GAP + 0.1, 13.0))
+    assert not cover.is_inside(Vector(lx, ly, case.Z_FRONT_OUT - case.LED_WINDOW - 0.2))
+    assert cover.is_inside(Vector(lx, ly, case.Z_FRONT_OUT - case.LED_WINDOW / 2))

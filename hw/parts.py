@@ -53,11 +53,12 @@ _LIST = [
     Part("npn", "C20526", "Transistor_BJT:MMBT3904", "Package_TO_SOT_SMD:SOT-23", "MMBT3904",
          rotation=180, per_board=2, mpn="MMBT3904"),
     Part("flyback", "C81598", "Device:D", "Diode_SMD:D_SOD-123", "1N4148W", per_board=2, mpn="1N4148W"),
-    Part("mov", "C233178", "Device:Varistor", "Varistor:RV_Disc_D12mm_W4.2mm_P7.5mm", "10D561K", tht=True,
-         mpn="10D561K"),
-    Part("fuse_r", "C1388188", "Device:R", "Resistor_THT:R_Axial_DIN0309_L9.0mm_D3.2mm_P12.70mm_Horizontal",
-         "10R 1W fusible", tht=True, per_board=2, mpn="FKN1WSJT-52-10R",
-         extra={"fusible": True, "body_mm": (9.0, 3.5)}),
+    Part("mov", "C233178", "Device:Varistor", "Varistor:RV_Disc_D12mm_W6.1mm_P7.5mm", "10D561K", tht=True,
+         mpn="10D561K"),  # up to 6.0 mm thick
+    # ceramic-tube SMD fuse, 1 A slow (what the HLK-PM01 sheet asks for), breaks 1000 A at 250 V AC, UL
+    # recognised. Same land pattern as Littelfuse 0443001.DR (C95352), which breaks only 50 A
+    Part("fuse", "C48392807", "Device:Fuse", "c6er:Fuse_SMD_10.1x3.1", "1A 250V slow", per_board=2, mpn="40T 1A250V",
+         extra={"amps": 1, "volts_ac": 250, "breaking_a": 1000, "body_mm": (10.5, 3.2, 3.2)}),
     Part("term508_hdr", "C395730", "Connector:Screw_Terminal_01x02", "c6er:DB2ER-5.08-02P", "DB2ER-5.08-2P",
          tht=True, per_board=3, mpn="DB2ER-5.08-2P-GN",
          extra={"rated_a": 15, "rated_v": 300, "pitch": 5.08}),  # UL 300 V 15 A (use group B)
@@ -69,10 +70,10 @@ _LIST = [
     Part("ferrite", "C1002", "Device:FerriteBead_Small", "Inductor_SMD:L_0603_1608Metric", "600R@100MHz",
          per_board=4, mpn="GZ1608D601TF"),
     # --- resistors ----------------------------------------------------------------------------
-    Part("r1k", "C21190", "Device:R", _R0603, "1k", per_board=6),
-    Part("r470", "C23179", "Device:R", _R0603, "470R", per_board=2),
+    Part("r1k", "C21190", "Device:R", _R0603, "1k", per_board=5),
+    Part("r470", "C23179", "Device:R", _R0603, "470R", per_board=3),
     Part("r10k", "C25804", "Device:R", _R0603, "10k", per_board=6),
-    Part("r5k1", "C23186", "Device:R", _R0603, "5.1k", per_board=2),
+    Part("r5k1", "C23186", "Device:R", _R0603, "5.1k", per_board=3),
     Part("r22", "C23345", "Device:R", _R0603, "22R 1%", per_board=1),
     Part("r27k", "C137340", "Device:R", "Resistor_SMD:R_1206_3216Metric", "27k 1206", per_board=4,
          mpn="RC1206FR-0727KL"),  # 200 V each; 4 x 27k = 108k feeds the ZMPT107 2.2 mA at 240 V
@@ -83,6 +84,9 @@ _LIST = [
     Part("c1u", "C15849", "Device:C", _C0603, "1uF", per_board=1),
     Part("c10u", "C15850", "Device:C", _C0805, "10uF", per_board=2),
     Part("c22u", "C45783", "Device:C", _C0805, "22uF", per_board=2),
+    # solid polymer, 21 mohm: the same maker and kind as the CellKeeper board's bulk capacitor
+    Part("c220u", "C46550461", "Device:C_Polarized", "Capacitor_SMD:CP_Elec_6.3x7.7", "220uF 16V polymer",
+         rotation=180, mpn="MA16V220M6X8", extra={"polymer": True, "uf": 220, "volts": 16}),
     # --- loose (ordered with the boards, not placed) ------------------------------------------
     Part("term508_plug", "C395732", "", "", "DB2EK-5.08-2P plug", per_board=3, mpn="DB2EK-5.08-2P-GN-S",
          extra={"rated_a": 15}),

@@ -33,6 +33,14 @@
   (constraint clearance (min 4mm))
   (constraint creepage (min 4mm))
 )
+(rule "across F1 (an open fuse sees line voltage)"
+  (condition "((A.NetName == '/L_IN' && B.NetName == '/L_F') || (A.NetName == '/L_F' && B.NetName == '/L_IN') || (A.NetName == '/L_IN' && B.NetName == '/ZP1') || (A.NetName == '/ZP1' && B.NetName == '/L_IN'))")
+  (constraint clearance (min 3mm))
+)
+(rule "across F2 (an open fuse sees line voltage)"
+  (condition "((A.NetName == '/N_IN' && B.NetName == '/N_F') || (A.NetName == '/N_F' && B.NetName == '/N_IN'))")
+  (constraint clearance (min 3mm))
+)
 (rule "relay 1 COM to NO (the open contact sees line voltage)"
   (condition "((A.NetName == '/K1_COM' && B.NetName == '/K1_NO') || (A.NetName == '/K1_NO' && B.NetName == '/K1_COM'))")
   (constraint clearance (min 3mm))
@@ -58,6 +66,6 @@
   (constraint track_width (min 2.5mm))
 )
 (rule "mains copper to board edge"
-  (condition "A.NetClass == 'MAINS_L' || A.NetClass == 'MAINS_N'")
-  (constraint edge_clearance (min 0.5mm))
+  (condition "(A.NetClass == 'MAINS_L' || A.NetClass == 'MAINS_N' || A.NetClass == 'MAINS_DIV' || A.NetClass == 'RELAY1' || A.NetClass == 'RELAY2')")
+  (constraint edge_clearance (min 0.7mm))
 )

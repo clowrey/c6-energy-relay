@@ -73,8 +73,6 @@ def test_energy_uses_power_calibration():
     for sensor, cal in (("energy_1", "power1_cal"), ("energy_2", "power2_cal")):
         block = re.search(rf"^\s*{sensor}:\n((?:\s{{6,}}.*\n)+)", text, re.M)
         assert block and f"multiply: ${{{cal}}}" in block.group(1), sensor
-    block = re.search(r"^\s*energy_total:\n((?:\s{6,}.*\n)+)", text, re.M)
-    assert block and "multiply" in block.group(1)
 
 
 def _sub(key):
@@ -107,3 +105,15 @@ def test_relays_start_off():
     """A relay never switches its load back on by itself after a reboot or power cut."""
     modes = re.findall(r"^\s*restore_mode:\s*(\S+)", YAML.read_text(), re.M)
     assert modes == ["ALWAYS_OFF", "ALWAYS_OFF"]
+
+
+def test_bl0939_stop_bits():
+    """ESPHome's BL0939 docs: 4800 baud, no parity, 2 stop bits (the chip sends 1.5)."""
+    uart = YAML.read_text().split("\nuart:")[1].split("\nsensor:")[0]
+    assert "baud_rate: 4800" in uart and "stop_bits: 2" in uart
+
+
+def test_energy_total_is_the_sum():
+    """Energy Total adds the two calibrated energies instead of scaling the raw sum by channel 1's factor."""
+    assert "platform: template" in YAML.read_text()
+    assert "id(energy_1).state + id(energy_2).state" in YAML.read_text()

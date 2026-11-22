@@ -78,12 +78,13 @@ C = Comp
 COMPONENTS: list[Comp] = [
     # ---- mains input, fuses, surge, isolated 5 V supply ----------------------------------------
     C("J1", "term508_hdr", {"1": "L_IN", "2": "N_IN"}, value="L  N/L2", block="mains"),
-    C("F1", "fuse_r", {"1": "L_IN", "2": "L_F"}, block="mains"),
-    C("F2", "fuse_r", {"1": "N_IN", "2": "N_F"}, block="mains"),
+    C("F1", "fuse", {"1": "L_IN", "2": "L_F"}, block="mains"),
+    C("F2", "fuse", {"1": "N_IN", "2": "N_F"}, block="mains"),
     C("RV1", "mov", {"1": "L_F", "2": "N_F"}, block="mains"),
     C("PS1", "psu", {"1": "L_F", "2": "N_F", "3": "GND", "4": "+5V"}, block="mains"),
     C("C12", "c22u", {"1": "+5V", "2": "GND"}, block="power"),
     C("C13", "c22u", {"1": "+5V", "2": "GND"}, block="power"),
+    C("C14", "c220u", {"1": "+5V", "2": "GND"}, block="power"),     # HLK-PM01 sheet: 100-220 uF
     # ---- USB-C, ESD, 5 V OR-ing, 3.3 V LDO -----------------------------------------------------
     C("J5", "usbc", {"A4": "VBUS", "A9": "VBUS", "B4": "VBUS", "B9": "VBUS",
                      "A1": "GND", "A12": "GND", "B1": "GND", "B12": "GND", "SH": "GND",
@@ -94,6 +95,7 @@ COMPONENTS: list[Comp] = [
     C("U4", "esd", {"1": "USB_DN", "6": "USB_DN", "3": "USB_DP", "4": "USB_DP", "2": "GND", "5": "VBUS"},
       block="usb"),
     C("D1", "schottky", {"1": "+5V", "2": "VBUS"}, block="usb"),
+    C("R27", "r5k1", {"1": "VBUS", "2": "GND"}, block="usb"),       # bleeds D1's reverse leakage
     C("U3", "ldo", {"1": "+5V", "3": "+5V", "2": "GND", "5": "3V3"}, block="power"),
     C("C8", "c100n", {"1": "+5V", "2": "GND"}, block="power"),
     C("C10", "c10u", {"1": "3V3", "2": "GND"}, block="power"),
@@ -106,7 +108,7 @@ COMPONENTS: list[Comp] = [
     C("SW1", "button", {"1": "EN", "2": "GND"}, value="EN", block="mcu"),
     C("SW2", "button", {"1": "BOOT", "2": "GND"}, value="BOOT", block="mcu"),
     C("R19", "r10k", {"1": "3V3", "2": "IO8"}, block="mcu"),  # GPIO8 high for serial download
-    C("R22", "r1k", {"1": "LED", "2": "LED_A"}, block="mcu"),
+    C("R22", "r470", {"1": "LED", "2": "LED_A"}, block="mcu"),
     C("D4", "led", {"1": "GND", "2": "LED_A"}, block="mcu"),
     C("J6", None, {str(i): n for i, n in enumerate(HEADER_PINS, start=1)}, value="GPIO",
       symbol="Connector_Generic:Conn_02x09_Odd_Even",

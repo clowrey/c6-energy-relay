@@ -14,6 +14,7 @@ OUT = Path(__file__).resolve().parent / "lib" / "c6er.3dshapes"
 BLACK = Color(0.08, 0.08, 0.09)
 GREEN = Color(0.13, 0.45, 0.25)      # pluggable terminal housings
 METAL = Color(0.78, 0.78, 0.74)
+WHITE = Color(0.92, 0.91, 0.88)      # ceramic
 
 
 def box(x0, y0, x1, y1, z0, z1):
@@ -69,6 +70,9 @@ MODELS = {
     "DB2ER-5.08-02P": socket_header(-2.54, -2.0, 7.62, 10.0, 7.8, 5.08, 2, 0.8),
     # WJ15EDGRC-3.81-4P: x -2.345..13.775, y -1.2..6.05, 9.2 high
     "WJ15EDGRC-3.81-04P": socket_header(-2.345, -1.2, 3 * 3.81 + 2.345, 6.05, 9.2, 3.81, 4, 0.7),
+    # ceramic SMD fuse 10.5 x 3.2 x 3.2 with 2 mm metal end caps
+    "Fuse_SMD_10.1x3.1": part(box(-3.2, -1.5, 3.2, 1.5, 0.1, 3.1), WHITE,
+                             box(-5.25, -1.6, -3.2, 1.6, 0.0, 3.2) + box(3.2, -1.6, 5.25, 1.6, 0.0, 3.2)),
     # stock footprints whose KiCad model isn't installed everywhere (gen_pcb.py points them here)
     # ESP32-C6-MINI-1: 13.2 x 16.6 x 2.4 module, antenna end toward KiCad -y; shield over the rest
     "ESP32-C6-MINI-1": part(box(-6.6, -11.0, 6.6, 5.6, 0.0, 0.8), GREEN,

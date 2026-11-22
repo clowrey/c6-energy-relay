@@ -8,6 +8,7 @@ Dimensions are from the datasheets in hw/datasheets (fetched by hw/tools/fetch_d
   ZMPT107-1      19 x 10 x 18.2, pins 0.8 round, 16.3 x 7.2 grid
   DB2ER-5.08     Dorabo right-angle pluggable header, drill 1.7, body 12 deep, pins 2.0 from the back
   WJ15EDGRC-3.81 Kangnex right-angle pluggable header, drill 1.4, body 7.25 deep, pins 1.2 from the back
+  Fuse 10.1x3.1  Hongda 40T (10.5 x 3.2 x 3.2) or Littelfuse 443 (10.1 x 3.1 x 3.1) ceramic SMD fuse
 """
 from __future__ import annotations
 
@@ -235,6 +236,28 @@ def fp_wj15():
     return fp
 
 
+def fp_fuse():
+    fp = _new_fp("Fuse_SMD_10.1x3.1", "Ceramic SMD fuse 10.1 x 3.1 mm: Hongda 40T (10.5 x 3.2), Littelfuse 443")
+    fp.SetAttributes(pcbnew.FP_SMD)
+    for num, x in (("1", -4.6), ("2", 4.6)):
+        p = pcbnew.PAD(fp)
+        p.SetAttribute(pcbnew.PAD_ATTRIB_SMD)
+        p.SetLayerSet(p.SMDMask())
+        p.SetNumber(num)
+        p.SetShape(pcbnew.PADSTACK.ALL_LAYERS, pcbnew.PAD_SHAPE_ROUNDRECT)
+        p.SetRoundRectRadiusRatio(pcbnew.PADSTACK.ALL_LAYERS, 0.1)
+        p.SetSize(pcbnew.PADSTACK.ALL_LAYERS, _v(2.8, 3.2))
+        p.SetPosition(_v(x, 0))
+        fp.Add(p)
+    _rect(fp, pcbnew.F_Fab, -5.25, -1.6, 5.25, 1.6, 0.1)
+    for y in (-1.75, 1.75):                        # silk along the sides only, between the pads
+        _line(fp, pcbnew.F_SilkS, -2.9, y, 2.9, y, 0.12)
+    _rect(fp, pcbnew.F_CrtYd, -6.25, -1.9, 6.25, 1.9, 0.05)
+    fp.Reference().SetPosition(_v(0, -3.0))
+    fp.Value().SetPosition(_v(0, 0))
+    return fp
+
+
 def add_model(fp, name):
     m = pcbnew.FP_3DMODEL()
     m.m_Filename = "${KIPRJMOD}/lib/c6er.3dshapes/" + name + ".step"
@@ -248,7 +271,7 @@ def main():
         shutil.rmtree(PRETTY)
     PRETTY.mkdir()
     io = pcbnew.PCB_IO_KICAD_SEXPR()
-    for f in (fp_relay(), fp_zmpt(), fp_db2er(), fp_wj15()):
+    for f in (fp_relay(), fp_zmpt(), fp_db2er(), fp_wj15(), fp_fuse()):
         add_model(f, f.GetFPID().GetLibItemName().c_str())
         io.FootprintSave(str(PRETTY), f)
     print("wrote", SYM, "and", sorted(os.listdir(PRETTY)))

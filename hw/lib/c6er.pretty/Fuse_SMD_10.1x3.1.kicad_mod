@@ -1,0 +1,121 @@
+(footprint "Fuse_SMD_10.1x3.1"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Ceramic SMD fuse 10.1 x 3.1 mm: Hongda 40T (10.5 x 3.2), Littelfuse 443")
+	(property "Reference" "REF**"
+		(at 0 -3 0)
+		(layer "F.SilkS")
+		(uuid "17f241b1-689b-4c95-a8d3-4948040827b6")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Value" "Fuse_SMD_10.1x3.1"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(uuid "26842482-a5cc-416b-adf0-dfdc13d589ac")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "02dcd74a-1e3b-4841-bf74-f8750a103204")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "7c31bfc8-5283-43ab-afdd-a6e4a34a55a4")
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -2.9 -1.75)
+		(end 2.9 -1.75)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "574ddfda-0c11-4071-b837-0d6787aebcc8")
+	)
+	(fp_line
+		(start -2.9 1.75)
+		(end 2.9 1.75)
+		(stroke
+			(width 0.12)
+			(type default)
+		)
+		(layer "F.SilkS")
+		(uuid "1f7dab98-fa68-46c3-85b4-f521fe59a017")
+	)
+	(fp_rect
+		(start -6.25 -1.9)
+		(end 6.25 1.9)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "9333dbd1-43c2-4a76-898b-dbb24981d529")
+	)
+	(fp_rect
+		(start -5.25 -1.6)
+		(end 5.25 1.6)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "04d3f490-5f7d-4613-bec1-bdf2b6239774")
+	)
+	(pad "1" smd roundrect
+		(at -4.6 0)
+		(size 2.8 3.2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.1)
+		(thermal_bridge_angle 45)
+		(uuid "dc907702-5b4f-4dd1-9d05-b0f443065ec3")
+	)
+	(pad "2" smd roundrect
+		(at 4.6 0)
+		(size 2.8 3.2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(roundrect_rratio 0.1)
+		(thermal_bridge_angle 45)
+		(uuid "4fa2804f-8480-484b-907d-c869406a35bf")
+	)
+	(embedded_fonts no)
+	(model "${KIPRJMOD}/lib/c6er.3dshapes/Fuse_SMD_10.1x3.1.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

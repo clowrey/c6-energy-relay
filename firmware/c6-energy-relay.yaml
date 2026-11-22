@@ -62,7 +62,7 @@ uart:
   tx_pin: ${uart_tx_pin}
   rx_pin: ${uart_rx_pin}
   baud_rate: 4800
-  stop_bits: 1
+  stop_bits: 2        # the BL0939 uses 1.5; ESPHome's BL0939 page asks for 2
 
 sensor:
   - platform: bl0939
@@ -89,17 +89,26 @@ sensor:
       filters:
         - multiply: ${power2_cal}
     energy_1:
+      id: energy_1
       name: Energy 1
       filters:
         - multiply: ${power1_cal}
     energy_2:
+      id: energy_2
       name: Energy 2
       filters:
         - multiply: ${power2_cal}
-    energy_total:
-      name: Energy Total
-      filters:
-        - multiply: ${power1_cal}   # one factor for the sum: calibrate both channels alike
+  # the sum of both calibrated energies (the chip's own total can't use both channels' factors)
+  - platform: template
+    name: Energy Total
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    update_interval: 10s
+    lambda: |-
+      if (!id(energy_1).has_state() || !id(energy_2).has_state()) return {};
+      return id(energy_1).state + id(energy_2).state;
   - platform: wifi_signal
     name: WiFi Signal
     update_interval: 60s

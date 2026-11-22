@@ -26,7 +26,7 @@ contactor coils). It is designed for JLCPCB to build fully assembled. It sits on
 | Terminals | all pluggable: 3 × 5.08 mm 15 A (mains in, relay 1, relay 2), 1 × 3.81 mm 4-pole (CTs) |
 | GPIO | every unused GPIO on a 2 × 9 header footprint (holes only, nothing fitted) |
 | Board | 80 × 80 mm, 2 layers, every part on the top side |
-| Cost | about $15.70 a board for 30, $12.10 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
+| Cost | about $16.00 a board for 30, $12.30 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
 
 **Contents:** [How it works](#how-it-works) · [Schematic](#schematic) · [Circuit board](#circuit-board) ·
 [Case](#case) · [Safety](#safety) · [Wiring](#wiring) · [Firmware](#firmware) ·
@@ -41,9 +41,11 @@ the GPIO header) is on the right. Three parts bridge the two sides, and each is 
 HLK-PM01 power module, the ZMPT107-1 voltage transformer and the relays (coil to contact). On the
 board the two sides are kept 6.5 mm apart.
 
-- **Power:** the mains input goes through a 10 Ω fusible resistor in **each** line, so a 240 V leg–leg
-  install is fused on both legs. A 10D561K varistor (MOV) clamps surges after the fuses. The potted
-  HLK-PM01 makes an isolated 5 V, 600 mA. On the bench, USB-C powers the board through an SS14 diode
+- **Power:** the mains input goes through a 1 A slow SMD fuse in **each** line, so a 240 V leg–leg install
+  is fused on both legs. The fuses are Hongda 40T ceramic types rated to break 1000 A at 250 V AC (the
+  varistor can fail as a short across the line); Littelfuse's 443 fits the same pads but breaks only
+  50 A. No copper runs under them. A 10D561K varistor (MOV) clamps surges after the fuses. The potted
+  HLK-PM01 makes an isolated 5 V, 600 mA, with a 220 µF solid polymer capacitor on it. On the bench, USB-C powers the board through an SS14 diode
   instead. An AP2112K LDO makes 3.3 V for the ESP32 and the BL0939; its low dropout keeps it
   regulating from USB minus the diode.
 - **Voltage:** four 27 kΩ resistors in series feed about 2 mA from the line into the ZMPT107-1, a
@@ -160,19 +162,22 @@ The silkscreen marks the strapping pins (4, 5, 8, 15) with `*`.
 Three printed parts, built in build123d from the board's own dimensions ([`case/case.py`](case/case.py)):
 
 - **Cover:** the front shell, with a pillar at each of the board's four mounting holes. The plugs
-  stick out through openings in the bottom wall and USB-C through the top. There are vents over the
-  power module and beside the relays. The front face is closed; the status LED shows through a
-  0.6 mm thin window.
+  stick out through openings in the bottom wall and USB-C through the top; the wall is solid below the
+  board, so nothing slips in under it to the mains solder joints. There are vents over the power
+  module and beside the relays. The front face is closed; a short tube carries the status LED's light
+  to a 0.6 mm thin window.
 - **Base:** the sealed back plate. Its only openings are the four screw holes, so nothing pushed in
   from the back (a screwdriver, the metal DIN rail) can reach the mains parts behind the board. A
-  standoff rises from it to each mounting hole, and a rim locates it inside the cover's walls.
+  standoff rises from it to each mounting hole, and a rim locates it inside the cover's walls. A
+  0.4 mm deep pocket in its back gives the clip's moving parts room to slide.
 - **DIN clip:** screwed under the base, it clips the case onto a TS35 rail.
   - **Hook (top):** 65 mm long, with a 3.5 mm thick wall and a 2.2 mm thick lip that reaches 2 mm
     over the rail's flange. Five ribs behind the wall stop it bending back off the rail.
   - **Latch (bottom):** a 20 mm wide block with the same wall and lip. It rides on four spring
     beams cut into the clip plate, which bend in the plate's own plane, so the block slides down
     2.4 mm to clear the flange while the beams stay at about a third of PETG's yield strain. The
-    lip's underside is a 45° ramp: rock the case onto the rail and it snaps on.
+    lip's underside is a 45° ramp: rock the case onto the rail and it snaps on. Two straps printed
+    over the pull tab's channel stop the latch twisting away from the case.
   - **To take it off the rail,** pull the tab at the clip's bottom edge down: put a screwdriver in
     its slot and lever.
 
@@ -191,9 +196,10 @@ board and the open back, and a test checks that.
 |---|---|
 | ![On a DIN rail](docs/img/case_din.png) | ![DIN clip](docs/img/case_clip.png) |
 
-Print in PETG (the latch has to flex): 0.2 mm layers, 3 walls, no supports. Print the cover on its
-front face, the base on its back face (standoffs up) and the clip on its flat face (hook and latch
-up), so the spring beams bend along the layers. STEP files and print-oriented STL files are in
+Print in PETG (the latch has to flex): 0.2 mm layers, 3 walls. Print the cover on its front face and
+the base on its back face (standoffs up), both without supports. Print the clip on its flat face (hook
+and latch up), so the spring beams bend along the layers, with supports under the hook's and latch's
+2 mm lips only: not under the two straps over the pull tab, which bridge. STEP files and print-oriented STL files are in
 [`case/out`](case/out).
 
 ## Safety
@@ -236,7 +242,8 @@ to right:
 - the BL0939 sensors: voltage, current, power and energy;
 - `Relay 1` and `Relay 2` switches, always off after a reboot or power cut;
 - the status LED;
-- the BOOT button, which toggles relay 1.
+- the BOOT button, which toggles relay 1. It's on the board, inside the closed case, so it's for the
+  bench.
 
 Add a `secrets.yaml` with `wifi_ssid`, `wifi_password`, `api_key`, `ota_password` and
 `ap_password`. Flash it over USB-C (native USB, no buttons needed), then update over Wi-Fi from then
@@ -266,7 +273,7 @@ The order files are in [`hw/out/jlc`](hw/out/jlc):
    - the ESP32-C6 module and USB-C;
    - the BL0939;
    - the LDO (U3) and the ESD chip (U4). U4 placed 180° off shorts USB power to ground;
-   - the diodes and transistors;
+   - the diodes and transistors, and the polymer capacitor (C14): its + side faces USB-C;
    - both buttons. A button turned 90° holds EN or BOOT low.
 4. **Plugs:** add the loose plugs from `plugs.csv` to the same order as parts: 3 × DB2EK-5.08-2P and
    1 × WJ15EDGK-3.81-4P per board.
@@ -276,23 +283,23 @@ the fees, PCB and shipping figures are estimates, so check the real quote.
 
 | Boards | Total | Per board |
 |---|---|---|
-| 10 | $228 | $22.81 |
-| 20 | $363 | $18.13 |
-| 30 | $470 | $15.66 |
-| 50 | $693 | $13.86 |
-| 100 | $1207 | $12.07 |
+| 10 | $234 | $23.41 |
+| 20 | $372 | $18.58 |
+| 30 | $481 | $16.03 |
+| 50 | $708 | $14.15 |
+| 100 | $1232 | $12.32 |
 
 The most expensive parts per board, at 30 boards:
 
 | Part | Cost per board |
 |---|---|
-| ESP32-C6-MINI-1-N4 | $3.28 |
+| ESP32-C6-MINI-1-N4 | $3.22 |
 | HLK-PM01 | $2.16 |
 | two relays | $1.88 |
 | BL0939 | $0.68 |
 | ZMPT107-1 | $0.42 |
 
-The 14 Extended parts add $3 each per order.
+The 15 Extended parts add $3 each per order.
 
 ## Building it from source
 

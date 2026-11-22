@@ -52,12 +52,16 @@ def test_fixed_gpio():
 
 
 def test_both_inputs_fused():
-    """Each input terminal pin reaches the rest of the circuit only through its fusible resistor."""
+    """Each input terminal pin reaches the rest of the circuit only through its fuse."""
     for pin, fuse in (("1", "F1"), ("2", "F2")):
         net = design.pin_net("J1", pin)
         refs = sorted(r for r, _ in design.NETS[net])
         assert refs == sorted(["J1", fuse]), (net, refs)
-    assert design.comp("F1").part == "fuse_r" and design.comp("F2").part == "fuse_r"
+    for ref in ("F1", "F2"):
+        x = PARTS[design.comp(ref).part].extra
+        # 1 A slow fuse at 250 V AC as the HLK-PM01 sheet asks; the MOV can fail short across the
+        # line, so the fuse must break a real mains fault current
+        assert x["amps"] == 1 and x["volts_ac"] >= 250 and x["breaking_a"] >= 1000
     mov = {design.pin_net("RV1", "1"), design.pin_net("RV1", "2")}
     assert mov == {"L_F", "N_F"}
 
@@ -84,3 +88,18 @@ def test_netclasses_cover_mains():
     for net in mains:
         for ref, _ in design.NETS[net]:
             assert ref[:1] in "JFRTPK" or ref.startswith("RV"), (net, ref)
+
+
+def test_bulk_capacitor():
+    """Solid polymer bulk capacitor on +5V: the HLK-PM01 sheet asks for 100-220 uF, derated to 75 %."""
+    bulk = [c for c in design.COMPONENTS if c.part and PARTS[c.part].extra.get("polymer")]
+    assert len(bulk) == 1
+    c, x = bulk[0], PARTS[bulk[0].part].extra
+    assert set(c.pins.values()) == {"+5V", "GND"} and c.pins["1"] == "+5V"     # pin 1 is the positive one
+    assert 100 <= x["uf"] <= 220 and x["volts"] * 0.75 >= 5.5
+
+
+def test_vbus_bleed():
+    """The Schottky leaks +5V back into VBUS: a resistor keeps an unplugged USB port's VBUS near 0 V."""
+    bleeds = [c for c in design.COMPONENTS if c.ref.startswith("R") and set(c.pins.values()) == {"VBUS", "GND"}]
+    assert len(bleeds) == 1 and PARTS[bleeds[0].part].value == "5.1k"

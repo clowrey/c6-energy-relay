@@ -6,6 +6,8 @@ import re
 import pytest
 from conftest import HW, kcli, kpy
 
+from hw.parts import PARTS
+
 PCB = HW / "c6-energy-relay.kicad_pcb"
 FEATURES = HW / "out" / "board_features.json"
 SPACING_TYPES = {"clearance", "creepage", "hole_clearance", "copper_edge_clearance"}
@@ -176,9 +178,10 @@ def test_relay_copper_width(board_dump):
 
 
 def test_mains_tracks_on_top(board_dump):
-    """L/N and divider copper is on the top layer only (the bottom side is a plain warning area)."""
+    """L/N and divider tracks are on the top layer only (the bottom side is a plain warning area), except
+    ZP1: it has to cross L_F, and must not run under the fuse."""
     for item in board_dump["copper"]:
-        if item["kind"] == "PCB_TRACK" and item["netclass"].startswith("MAINS"):
+        if item["kind"] == "PCB_TRACK" and item["netclass"].startswith("MAINS") and item["net"] != "/ZP1":
             assert item["layer"] == "F.Cu", item
 
 
@@ -242,3 +245,69 @@ def test_tracks_rounded(board_dump):
         if abs(ang - 180) > 1:
             sharp.append((net, layer, x, y, round(ang)))
     assert sharp == [], f"{len(sharp)} sharp corners, e.g. {sharp[:8]}"
+
+
+# ---- Second audit --------------------------------------------------------------------------------
+def _track_pts(c):
+    if c["kind"] == "PCB_ARC":
+        return _arc_points(c["start"], c["mid"], c["end"])
+    return [(c["start"][0] + (c["end"][0] - c["start"][0]) * k / 40,
+             c["start"][1] + (c["end"][1] - c["start"][1]) * k / 40) for k in range(41)]
+
+
+def test_nothing_under_the_fuses(board_dump):
+    """No copper on either layer under F1 / F2 between their pads: an open, charred fuse must not be
+    bridged by a track below it."""
+    pads = [p for p in board_dump["copper"] if p["kind"] == "pad"]
+    for ref in ("F1", "F2"):
+        bb = [p["bbox"] for p in pads if p["ref"] == ref]
+        assert len(bb) == 2, ref
+        x0, x1 = min(b[0] for b in bb), max(b[2] for b in bb)
+        lo, hi = sorted(bb, key=lambda b: b[1])
+        y0, y1 = lo[3], hi[1]                              # between the two pads
+        assert y1 - y0 >= 5.0, ref
+        for c in board_dump["copper"]:
+            if c["kind"] in ("PCB_TRACK", "PCB_ARC"):
+                w = c["width"] / 2
+                hits = [p for p in _track_pts(c) if x0 - w < p[0] < x1 + w and y0 + 0.05 < p[1] < y1 - 0.05]
+            elif c["kind"] == "zone":
+                hits = [p for p in c["points"] if x0 < p[0] < x1 and y0 < p[1] < y1]
+            else:
+                continue
+            assert hits == [], (ref, c["net"], c["layer"], hits[:3])
+
+
+def test_dru_covers_fuses_and_edges():
+    dru = (HW / "c6-energy-relay.kicad_dru").read_text(encoding="utf8")
+    for pre, post in (("/L_IN", "/L_F"), ("/L_IN", "/ZP1"), ("/N_IN", "/N_F")):
+        assert f"A.NetName == '{pre}' && B.NetName == '{post}'" in dru or \
+            (f"'{pre}'" in dru and f"'{post}'" in dru), (pre, post)
+    edge = dru[dru.index('"mains copper to board edge"'):]
+    for cls in ("MAINS_L", "MAINS_N", "MAINS_DIV", "RELAY1", "RELAY2"):
+        assert f"'{cls}'" in edge, cls
+
+
+def test_ceramics_off_the_edge(board_dump, features):
+    """No ceramic capacitor pad within 1.5 mm of the board edge (flexing cracks them)."""
+    w, h = features["outline_mm"]
+    for p in board_dump["copper"]:
+        if p["kind"] == "pad" and p["ref"].startswith("C") and p["ref"] != "C14":
+            x0, y0, x1, y1 = p["bbox"]
+            assert min(x0, y0, w - x1, h - y1) >= 1.5, p["ref"]
+
+
+def test_mov_footprint_fits_the_part():
+    """10D561K is up to 6.0 mm thick (datasheet table 2): the leads sit further apart than on a thin disc."""
+    import re
+    m = re.search(r"_W([\d.]+)mm_", PARTS["mov"].footprint)
+    assert float(m.group(1)) >= 6.0
+
+
+def test_plug_openings_start_at_the_board(features):
+    """The plugs sit on the component side: no opening below the board face (that slot would lead under
+    the board to mains pins), and the tops clear the 15.2 mm / 12 mm plugs."""
+    for c in features["connectors"]:
+        if c["edge"] == "bottom":
+            z0, z1 = c["plug_envelope"][2], c["plug_envelope"][5]
+            assert z0 >= 1.5, c["ref"]
+            assert z1 >= (17.2 if c["kind"] == "term508" else 13.6), c["ref"]

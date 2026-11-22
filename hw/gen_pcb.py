@@ -9,7 +9,7 @@ sits at (OX, OY) on the KiCad page. board_features.json uses origin lower-left, 
 
 Floor plan (board 80 x 80, mounted upright: bottom edge = terminals, top edge = USB-C + antenna):
   bottom-left   CT terminal J4, burdens, BL0939 filters above it, ZMPT secondary
-  bottom-middle input J1 between its two fusible resistors F1 (L) / F2 (N); MOV and the ZMPT divider
+  bottom-middle input J1 between its two SMD fuses F1 (L) / F2 (N); MOV and the ZMPT divider
                 between the fuses; HLK-PM01 standing above with its AC pins at the bottom
   bottom-right  relays K1, K2 (coil up, contacts down) over their terminals J2, J3
   top           USB-C (left), GPIO header, LDO, LED, ESP32-C6 module with the antenna in the top-right
@@ -42,19 +42,19 @@ CORNER_R = 2.0
 # ref: (x, y, rotation) in board coordinates (y down)
 PLACE = {
     # ---- mains ---------------------------------------------------------------------------------
-    "J1": (30.0, 70.0, 0), "F1": (23.0, 67.5, 90), "F2": (42.0, 67.5, 90),
-    "RV1": (28.5, 56.0, 0), "PS1": (30.0, 49.0, 90),
+    "J1": (30.0, 70.0, 0), "F1": (23.0, 62.2, 90), "F2": (41.2, 62.2, 90),
+    "RV1": (28.5, 55.5, 0), "PS1": (30.0, 49.0, 90),
     "T1": (10.5, 54.0, 180),
     # divider zigzag at 3.3 mm pitch between the fuses: pads of nodes two resistors apart (~120 V) keep
     # 1.5 mm; R4's N end sits right under RV1's N pad
-    "R1": (26.65, 63.0, 270), "R2": (29.95, 63.0, 90), "R3": (33.25, 63.0, 270), "R4": (36.55, 63.0, 90),
+    "R1": (27.0, 63.0, 270), "R2": (30.3, 63.0, 90), "R3": (33.6, 63.0, 270), "R4": (36.9, 63.0, 90),
     "K1": (53.9, 57.5, 90), "J2": (53.9 - 2.54, 70.0, 0),
-    "K2": (72.48, 57.5, 90), "J3": (72.48 - 2.54, 70.0, 0),
+    "K2": (72.0, 57.5, 90), "J3": (72.0 - 2.54, 70.0, 0),       # 1 mm contact copper to edge
     # ---- CT input and metering -----------------------------------------------------------------
     "J4": (3.2, 73.95, 0),
     # beads beside their burden columns, after the burden node (the CT loop is terminal -> burden only)
     "FB1": (1.2, 70.6, 90), "FB2": (5.01, 70.6, 90), "FB3": (8.82, 70.6, 90), "FB4": (12.63, 70.6, 90),
-    "R8": (3.2, 66.6, 90), "R9": (7.01, 66.6, 90), "R10": (10.82, 66.6, 90), "R11": (14.63, 66.6, 90),
+    "R8": (3.2, 66.6, 90), "R9": (7.01, 66.6, 90), "R10": (10.82, 66.6, 90), "R11": (13.93, 66.6, 90),   # R11 0.7 in: 6.5 mm to F1
     "U2": (14.0, 33.0, 0),
     # RC filters: one row per input, R (CT side left) then C to GND, rows 3.2 apart
     "R12": (2.02, 31.1, 0), "R13": (2.72, 34.3, 0), "R14": (3.42, 37.5, 0), "R15": (4.12, 40.7, 0),
@@ -66,12 +66,13 @@ PLACE = {
     "TP1": (12.6, 42.9, 0), "TP2": (13.0, 39.6, 0), "TP3": (15.6, 41.4, 0),
     # ---- USB, power ----------------------------------------------------------------------------
     "J5": (11.0, 4.2, 180), "U4": (11.0, 11.8, 0), "R20": (3.6, 6.0, 180), "R21": (5.6, 11.6, 270),
-    "D1": (20.0, 11.5, 180),
+    "D1": (20.0, 11.5, 180), "R27": (18.0, 14.8, 270),
     "U3": (44.0, 7.8, 0), "C8": (41.0, 10.5, 90), "C10": (46.4, 3.6, 0), "C12": (44.6, 12.6, 90),
+    "C14": (29.6, 12.0, 0),
     "C13": (61.6, 46.8, 270),
     # ---- MCU: module turned so the antenna points out of the right edge ---------------------------
     "U1": (68.8, 12.0, 270),
-    "C11": (72.4, 1.3, 0), "C7": (72.6, 3.6, 0), "R22": (66.5, 2.3, 180), "D4": (63.3, 2.3, 0),
+    "C11": (72.4, 2.35, 0), "C7": (71.0, 4.1, 0), "R22": (66.5, 2.3, 180), "D4": (63.3, 2.3, 0),
     "SW1": (37.0, 6.0, 0), "R18": (42.5, 2.9, 270), "C9": (37.0, 2.2, 0),
     "SW2": (50.5, 17.5, 0), "R19": (59.0, 36.2, 180),
     "J6": (45.0, 33.54, 90),
@@ -98,6 +99,7 @@ for _k in (1, 2):
     _z, _s = _relay_copper(_k)
     RELAY_ZONES.update(_z)
     STITCH.update(_s)
+FUSE_GAP = (1.6, 3.1)   # half width, half length of the copper-free area under each fuse, between its pads
 H3_RING = 4.0   # no copper around H3: its screw sits between L_IN and the CT / ground area
 
 MM = pcbnew.FromMM
@@ -252,6 +254,11 @@ def write_dru():
         ("input to relays", pair(["MAINS_L", "MAINS_N", "MAINS_DIV"], ["RELAY1", "RELAY2"]), "4mm", "4mm"),
         ("relay 1 to relay 2", pair(["RELAY1"], ["RELAY2"]), "4mm", "4mm"),
     ]
+    # clearance only, as for the divider: flat board here, and KiCad's creepage check misreports these pairs
+    for ref, pre, posts in (("F1", "/L_IN", ("/L_F", "/ZP1")), ("F2", "/N_IN", ("/N_F",))):
+        cond = " || ".join(f"(A.NetName == '{a}' && B.NetName == '{b}')" for post in posts
+                          for a, b in ((pre, post), (post, pre)))
+        rules.append((f"across {ref} (an open fuse sees line voltage)", f"({cond})", "3mm", None))
     for k in (1, 2):
         com, no = f"/K{k}_COM", f"/K{k}_NO"
         cond = f"((A.NetName == '{com}' && B.NetName == '{no}') || (A.NetName == '{no}' && B.NetName == '{com}'))"
@@ -267,8 +274,8 @@ def write_dru():
         out.append(")\n")
     out.append('(rule "relay contact copper"\n  (condition "A.NetClass == \'RELAY1\' || A.NetClass == \'RELAY2\'")\n'
                "  (constraint track_width (min 2.5mm))\n)\n")
-    out.append('(rule "mains copper to board edge"\n  (condition "A.NetClass == \'MAINS_L\' || A.NetClass == \'MAINS_N\'"'
-               ")\n  (constraint edge_clearance (min 0.5mm))\n)\n")
+    out.append('(rule "mains copper to board edge"\n  (condition "' + any_of("A", mains) + '")\n'
+               "  (constraint edge_clearance (min 0.7mm))\n)\n")
     DRU.write_text("".join(out), encoding="utf8", newline="\n")
 
 
@@ -383,6 +390,14 @@ def build() -> pcbnew.BOARD:
             for a in range(32)]
     zone(board, None, [pcbnew.F_Cu, pcbnew.B_Cu], ring, rule_area=True, name="H3 screw keep-out")
 
+    # no copper under the fuses: an open, charred fuse must not find a bridge below it
+    fw, fl = FUSE_GAP
+    for ref in ("F1", "F2"):
+        fx, fy, _ = PLACE[ref]
+        zone(board, None, [pcbnew.F_Cu, pcbnew.B_Cu],
+             [(fx - fw, fy - fl), (fx + fw, fy - fl), (fx + fw, fy + fl), (fx - fw, fy + fl)],
+             rule_area=True, name=f"{ref} keep-out")
+
     # ground pour, both layers, whole board; DRU clearances keep it 6.5 mm off mains copper
     inset = 0.3
     gnd_poly = [(inset, inset), (W - inset, inset), (W - inset, H - inset), (inset, H - inset)]
@@ -485,7 +500,7 @@ def silkscreen(board):
     B = pcbnew.B_SilkS
     title = text(board, "C6 ENERGY RELAY v1.0", 32.0, 11.6, 1.0, bold=True)
     obstacles = _silk_obstacles(board, skip=title)
-    spots = [(size, 31.0 + 0.5 * i, 11.6) for size in (1.0, 0.9, 0.8) for i in range(7)]
+    spots = [(size, 53.5 + 0.5 * i, y) for size in (1.0, 0.9, 0.8) for y in (24.8, 24.0, 25.6, 23.2) for i in range(14)]
     for size, x, y in spots:
         title.SetTextSize(pcbnew.VECTOR2I(MM(size), MM(size)))
         title.SetTextThickness(MM(size * 0.2))
@@ -545,7 +560,8 @@ def features(board) -> dict:
     def conn(ref, kind, edge, n, pitch, depth, plug_len, z_span):
         """plug_envelope = box the mated plug (or USB cable plug) may occupy, case coordinates:
         x/y as the board (origin lower-left), z = 0 at the PCB's bottom face. Datasheet sizes plus margin:
-        DB2EK 5.08 plug 18.2 long x 15.2 high, WJ15EDGK 3.81 plug ~15 x 12, USB-C cable overmould 12 x 7."""
+        DB2EK 5.08 plug 18.2 long x 15.2 high, WJ15EDGK 3.81 plug ~15 x 12, USB-C cable overmould 12 x 7.
+        The plugs stand on the component side (z = 1.6, PCB top): nothing opens below the board."""
         x, y, _ = PLACE[ref]
         fx, fy = to_features(x, y)
         body_w = n * pitch + (0.88 if kind == "term381" else 0)
@@ -558,10 +574,10 @@ def features(board) -> dict:
                 "h": depth, "plug_envelope": [round(v, 3) for v in env]}
 
     cons = [
-        conn("J1", "term508", "bottom", 2, 5.08, 12.0, 19.0, (-2.5, 15.5)),
-        conn("J2", "term508", "bottom", 2, 5.08, 12.0, 19.0, (-2.5, 15.5)),
-        conn("J3", "term508", "bottom", 2, 5.08, 12.0, 19.0, (-2.5, 15.5)),
-        conn("J4", "term381", "bottom", 4, 3.81, 7.25, 16.0, (-2.0, 12.5)),
+        conn("J1", "term508", "bottom", 2, 5.08, 12.0, 19.0, (1.6, 17.6)),
+        conn("J2", "term508", "bottom", 2, 5.08, 12.0, 19.0, (1.6, 17.6)),
+        conn("J3", "term508", "bottom", 2, 5.08, 12.0, 19.0, (1.6, 17.6)),
+        conn("J4", "term381", "bottom", 4, 3.81, 7.25, 16.0, (1.6, 14.2)),
         conn("J5", "usbc", "top", 1, 9.0, 7.35, 20.0, (-0.5, 7.0)),
     ]
     hot = []
