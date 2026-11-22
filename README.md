@@ -141,10 +141,11 @@ low-voltage side. The hole between the input and the CT area also has a copper-f
 **Layers.** The board is routed by hand, with every bend rounded into an arc. The tracks are listed
 in [`hw/routes.py`](hw/routes.py), and [`hw/route.py`](hw/route.py) rounds the bends as it lays them:
 1 mm radius on signals, 2.5 × the width on wider tracks. Corners where another branch joins stay
-sharp, so the joint stays connected. Signal tracks are 0.2 mm, and ground is poured on both layers
+sharp, so the joint stays connected. The fan-out from the ESP32 to the GPIO header runs as splines
+([`hw/spline.py`](hw/spline.py) turns them into arcs, since KiCad tracks can't be splines). Signal tracks are 0.2 mm, and ground is poured on both layers
 and stitched with vias.
 
-<p align="center"><img src="docs/img/layer_detail.png" width="60%" alt="Close-up: rounded tracks from the ESP32-C6 to the GPIO header"></p>
+<p align="center"><img src="docs/img/layer_detail.png" width="60%" alt="Close-up: spline tracks from the ESP32-C6 to the GPIO header"></p>
 
 | All copper and top silkscreen | Top copper | Bottom copper |
 |---|---|---|
@@ -273,7 +274,7 @@ The order files are in [`hw/out/jlc`](hw/out/jlc):
    - the ESP32-C6 module and USB-C;
    - the BL0939;
    - the LDO (U3) and the ESD chip (U4). U4 placed 180° off shorts USB power to ground;
-   - the diodes and transistors, and the polymer capacitor (C14): its + side faces USB-C;
+   - the diodes and transistors, and the polymer capacitor (C14): its + side faces the HLK-PM01;
    - both buttons. A button turned 90° holds EN or BOOT low.
 4. **Plugs:** add the loose plugs from `plugs.csv` to the same order as parts: 3 × DB2EK-5.08-2P and
    1 × WJ15EDGK-3.81-4P per board.

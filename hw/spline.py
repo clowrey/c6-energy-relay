@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import math
 
-STRAIGHT = 1e-4      # sagitta below this fraction of the chord: draw it as a line
+STRAIGHT = 1e-3      # sagitta below this fraction of the chord: draw it as a line (KiCad mishandles arcs
+                     # with a radius of a metre or so; the corner this leaves is under 0.5 degrees)
 PIECES = 4           # biarcs per span between two waypoints
 
 

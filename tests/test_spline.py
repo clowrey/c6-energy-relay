@@ -58,6 +58,16 @@ def test_collinear_points_stay_straight():
     assert all(i[0] == "line" for i in spline_path([(0, 0), (4, 0), (9, 0)]))
 
 
+def test_no_huge_arcs():
+    """A nearly straight span becomes lines: KiCad reads an arc of a metre's radius as a circle across the board."""
+    for pts, kw in (([(61.6, 20.5), (61.74, 29.5)], {"start": (0, 1), "end": (0, 1)}), ([(0, 0), (5, 0.002), (10, 0)], {})):
+        for item in spline_path(pts, **kw):
+            if item[0] == "arc":
+                _, a, m, b = item
+                sag = math.dist(m, ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2))
+                assert math.dist(a, b) ** 2 / (8 * sag) < 200, item
+
+
 def test_end_directions():
     """start / end directions make the curve leave and arrive as asked (out of a pad, into a via)."""
     items = spline_path([(0, 0), (10, 6)], start=(1, 0), end=(1, 0))
