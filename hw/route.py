@@ -15,6 +15,7 @@ import pcbnew
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 from hw.gen_pcb import NET, OX, OY, PCB  # noqa: E402
+from hw.spline import spline_path  # noqa: E402
 
 MM = pcbnew.FromMM
 LAYERS = {"F": pcbnew.F_Cu, "B": pcbnew.B_Cu}
@@ -126,21 +127,31 @@ def add_routes(board, routes):
                 item.SetNet(net)
                 board.Add(item)
 
+            def line(a, b):
+                t = pcbnew.PCB_TRACK(board)
+                t.SetStart(vec(a))
+                t.SetEnd(vec(b))
+                add(t)
+
+            def arc(a, m, b):
+                t = pcbnew.PCB_ARC(board)
+                t.SetStart(vec(a))
+                t.SetMid(vec(m))
+                t.SetEnd(vec(b))
+                add(t)
+
+            if path.get("spline") and len(xy) > 1:
+                for kind, *p in spline_path(xy, path.get("start"), path.get("end")):
+                    (line if kind == "line" else arc)(*p)
+                xy = []
             cur = xy[0] if xy else None
             for i in range(1, len(xy)):
                 end = plan[i][0] if i in plan else xy[i]
                 if vec(cur) != vec(end):
-                    t = pcbnew.PCB_TRACK(board)
-                    t.SetStart(vec(cur))
-                    t.SetEnd(vec(end))
-                    add(t)
+                    line(cur, end)
                 if i in plan:
                     t1, mid, t2 = plan[i]
-                    arc = pcbnew.PCB_ARC(board)
-                    arc.SetStart(vec(t1))
-                    arc.SetMid(vec(mid))
-                    arc.SetEnd(vec(t2))
-                    add(arc)
+                    arc(t1, mid, t2)
                     cur = t2
                 else:
                     cur = xy[i]

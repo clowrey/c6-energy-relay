@@ -22,6 +22,14 @@ def b(net, *pts, w=0.2, vias=()):
     t(net, *pts, w=w, layer="B", vias=vias)
 
 
+def s(net, *pts, w=0.2, layer="F", vias=(), start=None, end=None):
+    """A smooth spline through the points (hw/spline.py) instead of straight legs with rounded corners.
+    start / end: optional directions (dx, dy; y down) it leaves the first and arrives at the last point with.
+    A branch must join at one of the points."""
+    ROUTES.setdefault(net, []).append({"layer": layer, "w": w, "pts": list(pts), "vias": list(vias),
+                                       "spline": True, "start": start, "end": end})
+
+
 def v(net, *pts):
     ROUTES.setdefault(net, []).append({"layer": "F", "w": 0.2, "pts": [], "vias": list(pts)})
 
