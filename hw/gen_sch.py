@@ -299,7 +299,7 @@ def build() -> str:
     for block, ox, oy, _ in BLOCKS:
         title = {"mains": "Mains input, fuses, MOV, isolated 5 V", "vsense": "Voltage sense (ZMPT107-1)",
                  "relay": "Relays (dry contacts, 10 A use)", "power": "5 V / 3.3 V", "usb": "USB-C (native USB)",
-                 "mcu": "ESP32-C6-MINI-1, buttons, LED, GPIO header", "meter": "BL0939 metering, CT inputs"}[block]
+                 "mcu": "ESP32-C6-MINI-1, buttons, LED, Qwiic, GPIO header", "meter": "BL0939 metering, CT inputs"}[block]
         out.append(f'\t(text "{title}" (exclude_from_sim no) (at {_snap(ox)} {_snap(oy - 7.62)} 0)'
                    f' (effects (font (size 2.54 2.54) (bold yes)) (justify left bottom))'
                    f' (uuid "{_uid("title", block)}"))\n')

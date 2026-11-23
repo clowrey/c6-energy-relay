@@ -73,8 +73,9 @@ PLACE = {
     # ---- MCU: module turned so the antenna points out of the right edge ---------------------------
     "U1": (68.8, 12.0, 270),
     "C11": (72.4, 2.25, 0), "C7": (71.2, 4.2, 0), "R22": (68.4, 2.2, 180), "D4": (65.2, 2.2, 0),
-    "SW1": (52.0, 6.0, 0), "R18": (61.8, 2.2, 270), "C9": (58.5, 2.3, 180),
-    "SW2": (52.0, 16.0, 0), "R19": (47.5, 24.2, 270),
+    "J7": (52.0, 3.3, 180), "R30": (45.2, 3.775, 270), "R31": (47.0, 3.775, 270),
+    "SW1": (51.0, 10.4, 0), "R18": (61.8, 2.2, 270), "C9": (58.5, 2.3, 180),
+    "SW2": (51.0, 18.2, 0), "R19": (47.5, 24.2, 270),
     "J6": (46.5, 33.54, 90),
     # ---- relay drivers -------------------------------------------------------------------------
     "Q1": (53.9, 42.8, 0), "D2": (53.9, 46.2, 0), "R23": (49.9, 41.85, 0), "R25": (49.9, 43.75, 180),
@@ -347,7 +348,7 @@ def build() -> pcbnew.BOARD:
             if c.part:
                 fp.SetField(key, val)
                 fp.GetField(key).SetVisible(False)
-        if c.ref in ("J5", "J6"):   # J6: tracks leave its ground pins too few spokes for a thermal relief
+        if c.ref in ("J5", "J6", "J7"):   # J6: tracks leave its ground pins too few spokes for a thermal relief
             fp.SetLocalZoneConnection(pcbnew.ZONE_CONNECTION_FULL)
         if c.ref == "J6":       # the pin labels frame the header; its outline would cross them
             for it in list(fp.GraphicalItems()):
@@ -369,7 +370,7 @@ def build() -> pcbnew.BOARD:
             tight_courtyard(fp)
         fp.Reference().SetTextSize(pcbnew.VECTOR2I(MM(0.8), MM(0.8)))
         fp.Reference().SetTextThickness(MM(0.12))
-        if c.ref in ("J1", "J2", "J3", "J4", "J5"):      # these carry what they are for instead (labels())
+        if c.ref in ("J1", "J2", "J3", "J4", "J5", "J7"):      # these carry what they are for instead (labels())
             fp.Reference().SetVisible(False)
 
     for i, (x, y) in enumerate(HOLES, start=1):
@@ -547,6 +548,7 @@ def silkscreen(board):
         text(board, name, x, 74.4, 0.8, bold=True)
         text(board, "COM NO", x, 76.0, 0.8, bold=True)
     text(board, "USB", 19.2, 3.0, 1.0, bold=True)
+    text(board, "QWIIC", 44.2, 1.45, 0.9, bold=True)
     # GPIO header pin names: odd row (y0) labelled below it, even row (y0 - 2.54) above it
     x0, y0, _ = PLACE["J6"]
     strap = {"IO4", "IO5", "IO8", "IO15"}
@@ -574,10 +576,15 @@ def features(board) -> dict:
         The plugs stand on the component side (z = 1.6, PCB top): nothing opens below the board."""
         x, y, _ = PLACE[ref]
         fx, fy = to_features(x, y)
-        body_w = n * pitch + (0.88 if kind == "term381" else 0)
+        body_w = n * pitch + (0.88 if kind == "term381" else 2.0 if kind == "qwiic" else 0)
         x0 = x - (pitch / 2 + (0.44 if kind == "term381" else 0))
         if edge == "bottom":
             env = [x0 - 0.5, -plug_len, z_span[0], x0 + body_w + 0.5, 0.0, z_span[1]]
+        elif kind == "qwiic":
+            # SHR-04V-S-B plug: 7.0 mm wide with its ears, 2.8 mm high, on z = 1.6..4.5, and it ends inside the
+            # wall. 11 x 6 mm envelope (the cover adds 1 mm all round: a 13 x 8 mm opening) leaves 3 mm each side
+            # to grip the ears, and stays too low for a finger to pass
+            env = [fx - 5.5, H, z_span[0], fx + 5.5, H + plug_len, z_span[1]]
         else:
             env = [fx - 6.0, H, z_span[0], fx + 6.0, H + plug_len, z_span[1]]
         return {"ref": ref, "kind": kind, "edge": edge, "x": fx, "y": fy, "w": round(body_w, 3),
@@ -589,6 +596,7 @@ def features(board) -> dict:
         conn("J3", "term508", "bottom", 2, 5.08, 12.0, 19.0, (1.6, 17.6)),
         conn("J4", "term381", "bottom", 4, 3.81, 7.25, 16.0, (1.6, 14.2)),
         conn("J5", "usbc", "top", 1, 9.0, 7.35, 20.0, (-0.5, 7.0)),
+        conn("J7", "qwiic", "top", 4, 1.0, 4.25, 16.0, (1.0, 7.0)),
     ]
     hot = []
     for ref in ("PS1", "K1", "K2", "F1", "F2"):

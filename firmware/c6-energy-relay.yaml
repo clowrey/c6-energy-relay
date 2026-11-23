@@ -23,6 +23,8 @@ substitutions:
   relay2_pin: GPIO23
   led_pin: GPIO2
   boot_pin: GPIO9
+  i2c_sda_pin: GPIO6
+  i2c_scl_pin: GPIO7
   coil_hold: "60%"
   coil_pull_in: 300ms
   voltage_cal: "1.62"
@@ -67,6 +69,12 @@ uart:
   rx_pin: ${uart_rx_pin}
   baud_rate: 4800
   stop_bits: 2        # the BL0939 uses 1.5; ESPHome's BL0939 page asks for 2
+
+i2c:
+  id: qwiic_i2c
+  sda: ${i2c_sda_pin}
+  scl: ${i2c_scl_pin}
+  scan: true
 
 sensor:
   - platform: bl0939

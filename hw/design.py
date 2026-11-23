@@ -46,6 +46,7 @@ GPIO = {
     "BOOT": 9,                       # BOOT button, usable as a button after boot
     "RELAY1": 22, "RELAY2": 23,      # relay drivers (not strapping pins)
     "LED": 2,                        # status LED
+    "I2C_SDA": 6, "I2C_SCL": 7,      # Qwiic / STEMMA QT (ESP32-C6 LP-I2C pins; also on J6)
 }
 ESP_IO_PINS = {  # ESP32-C6-MINI-1 module pin -> GPIO (RXD0 = GPIO17, TXD0 = GPIO16)
     "5": 2, "6": 3, "9": 4, "10": 5, "12": 0, "13": 1, "15": 6, "16": 7, "17": 12, "18": 13, "19": 14,
@@ -114,6 +115,11 @@ COMPONENTS: list[Comp] = [
     C("J6", None, {str(i): n for i, n in enumerate(HEADER_PINS, start=1)}, value="GPIO",
       symbol="Connector_Generic:Conn_02x09_Odd_Even",
       footprint="Connector_PinHeader_2.54mm:PinHeader_2x09_P2.54mm_Vertical", dnp=True, block="mcu"),
+    # Qwiic / STEMMA QT (3.3 V I2C, pin 1 GND, 2 3V3, 3 SDA, 4 SCL) with 4.7 kOhm host pull-ups
+    C("J7", "qwiic", {"1": "GND", "2": "3V3", "3": _gpio_net(GPIO["I2C_SDA"]),
+                      "4": _gpio_net(GPIO["I2C_SCL"]), "MP": "GND"}, block="mcu"),
+    C("R30", "r4k7", {"1": "3V3", "2": _gpio_net(GPIO["I2C_SDA"])}, block="mcu"),
+    C("R31", "r4k7", {"1": "3V3", "2": _gpio_net(GPIO["I2C_SCL"])}, block="mcu"),
     # ---- metering ------------------------------------------------------------------------------
     C("U2", "bl0939", {"1": "3V3", "8": "GND", "3": "IP1", "4": "IN1", "5": "IP2", "6": "IN2", "7": "VP",
                        "14": "UART_TX", "15": "UART_RX", "12": "SEL", "11": "CF", "9": "ZX", "10": "I_LEAK"},

@@ -36,7 +36,8 @@ def test_pins_match_design():
     text = YAML.read_text()
     assert _pin("uart_tx_pin") == design.GPIO["UART_TX"]
     assert _pin("uart_rx_pin") == design.GPIO["UART_RX"]
-    for name, gpio in (("RELAY1", "relay1_pin"), ("RELAY2", "relay2_pin"), ("LED", "led_pin"), ("BOOT", "boot_pin")):
+    for name, gpio in (("RELAY1", "relay1_pin"), ("RELAY2", "relay2_pin"), ("LED", "led_pin"), ("BOOT", "boot_pin"),
+                       ("I2C_SDA", "i2c_sda_pin"), ("I2C_SCL", "i2c_scl_pin")):
         m = re.search(rf"^\s*{gpio}:\s*GPIO(\d+)", text, re.M)
         assert m and int(m.group(1)) == design.GPIO[name], name
     assert "baud_rate: 4800" in text
@@ -132,3 +133,12 @@ def test_relay_coils_pull_in_then_hold():
         assert f"switch.is_on: relay{k}" in script
         sw = text.split(f"id: relay{k}\n")[1].split("- platform:")[0]
         assert sw.index(f"script.stop: relay{k}_pull_in") < sw.index(f"output.turn_off: relay{k}_coil")
+
+
+def test_i2c_block():
+    """Starter config exposes the Qwiic I2C bus using the substitution pins with bus scan enabled."""
+    text = YAML.read_text()
+    i2c = text.split("\ni2c:")[1].split("\nsensor:")[0]
+    assert "sda: ${i2c_sda_pin}" in i2c
+    assert "scl: ${i2c_scl_pin}" in i2c
+    assert "scan: true" in i2c

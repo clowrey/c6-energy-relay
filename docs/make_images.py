@@ -35,7 +35,7 @@ SECTIONS = {  # title on the sheet -> image name
     "Relays (dry contacts, 10 A use)": "sch_relays",
     "5 V / 3.3 V": "sch_power",
     "USB-C (native USB)": "sch_usb",
-    "ESP32-C6-MINI-1, buttons, LED, GPIO header": "sch_mcu",
+    "ESP32-C6-MINI-1, buttons, LED, Qwiic, GPIO header": "sch_mcu",
     "BL0939 metering, CT inputs": "sch_metering",
 }
 

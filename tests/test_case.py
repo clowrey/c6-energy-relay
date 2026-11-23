@@ -391,7 +391,7 @@ def test_lid_labels(parts):
     w, h = FEATURES["outline_mm"]
     labels = case.lid_labels(FEATURES)
     texts = [l[0] for l in labels]
-    for want in ("MAINS", "L", "N", "RELAY 1", "RELAY 2", "CT1", "CT2", "USB", "100-240V~"):
+    for want in ("MAINS", "L", "N", "RELAY 1", "RELAY 2", "CT1", "CT2", "USB", "QWIIC", "100-240V~"):
         assert want in texts, want
     assert texts.count("COM") == 2 and texts.count("NO") == 2 and texts.count("+") == 2 and texts.count("-") == 2
     for solid in case.label_solids(FEATURES):
@@ -411,3 +411,20 @@ def test_lid_labels(parts):
             row = sorted((l for l in labels if l[2] == case.LABEL_ROWS[0]
                           and c["x"] - pitch < l[1] < c["x"] + len(pins) * pitch), key=lambda l: l[1])
             assert [l[0] for l in row] == list(pins), c["ref"]
+
+
+def test_qwiic_opening_and_plug_free(parts):
+    """The Qwiic opening in the top wall is wide enough to grip the plug's ears (it ends inside the wall), too
+    low for a finger (under 12 mm), and the plug's envelope is free of every case part."""
+    _, cover, _ = parts
+    _, h = FEATURES["outline_mm"]
+    q = next(c for c in FEATURES["connectors"] if c["ref"] == "J7")
+    x0, y0, z0, x1, y1, z1 = q["plug_envelope"]
+    assert x1 - x0 >= 10.0 and 5.5 <= z1 - z0 and z1 - z0 + 2.0 < 12.0
+    wy = h + case.GAP + case.WALL / 2
+    for fx in (x0 + 0.5, (x0 + x1) / 2, x1 - 0.5):
+        for fz in (z0 + 0.5, (z0 + z1) / 2, z1 - 0.5):
+            assert not cover.is_inside(Vector(fx, wy, fz)), (fx, fz)
+    env = Pos((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2) * Box(x1 - x0, y1 - y0, z1 - z0)
+    for p in parts:
+        assert _overlap(p, env) < 0.01, _overlap(p, env)

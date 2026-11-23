@@ -68,6 +68,8 @@ def main():
     arrow([(570, 220), (620, 220)], "UART", both=True)
     box(440, 310, 130, 60, ["J4 CT1, CT2", "0.6 Ω burdens"], LV_BOX)
     arrow([(505, 310), (505, 280)], "IP/IN", at=(530, 300))
+    box(770, 320, 110, 60, ["J7 Qwiic", "3.3 V I2C"], LV_BOX)
+    arrow([(825, 280), (825, 320)], "GPIO6, 7", at=(855, 304), both=True)
 
     # relays
     box(20, 400, 120, 60, ["J2, J3", "COM / NO", "dry contacts"], MAINS_BOX)

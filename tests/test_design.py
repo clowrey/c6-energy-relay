@@ -28,10 +28,15 @@ def test_refs_unique_and_pins_exist():
 
 
 def test_header_has_all_unused_gpio():
-    used = set(design.GPIO.values())
+    # Qwiic I2C pins stay on the 2x9 GPIO header as well (keeps all 18 pins and their order)
+    i2c_pins = {design.GPIO["I2C_SDA"], design.GPIO["I2C_SCL"]}
+    used = set(design.GPIO.values()) - i2c_pins
     want = {f"IO{n}" for n in ESP_GPIO - used} | {"3V3", "+5V", "GND"}
+    assert len(design.HEADER_PINS) == 18
     assert want <= set(design.HEADER_PINS)
     assert set(design.HEADER_PINS) <= want
+    for n in i2c_pins:
+        assert f"IO{n}" in design.HEADER_PINS
 
 
 def test_header_pins_are_nets():
@@ -128,3 +133,17 @@ def test_voltage_divider_power_and_signal():
     burden = float(PARTS[design.comp("R6").part].value.split("R")[0])
     assert 30 <= amps * burden * 1e3 <= 0.7 * 70          # mV rms on VP
     assert amps <= 2e-3                                    # ZMPT107-1: 2 mA rated
+
+
+def test_qwiic_port_and_pullups():
+    """Qwiic JST SH port: standard pinout (1 GND, 2 3V3, 3 SDA, 4 SCL, MP GND) with 4.7k pull-ups."""
+    q = design.comp("J7")
+    assert q.part == "qwiic" and q.lcsc == "C160404" and not q.dnp
+    sda_g, scl_g = design.GPIO["I2C_SDA"], design.GPIO["I2C_SCL"]
+    assert (sda_g, scl_g) == (6, 7)
+    assert sda_g not in STRAPPING and scl_g not in STRAPPING
+    sda_net, scl_net = f"IO{sda_g}", f"IO{scl_g}"
+    assert q.pins == {"1": "GND", "2": "3V3", "3": sda_net, "4": scl_net, "MP": "GND"}
+    for net in (sda_net, scl_net):
+        pu = [c for c in design.COMPONENTS if c.ref.startswith("R") and set(c.pins.values()) == {"3V3", net}]
+        assert len(pu) == 1 and PARTS[pu[0].part].value == "4.7k", (net, pu)

@@ -25,8 +25,9 @@ contactor coils). It is designed for JLCPCB to build fully assembled. It sits on
 | Supply | 100–240 V AC: 120 V line–neutral or 240 V leg–leg, chosen at install. HLK-PM01 isolated 5 V, or USB-C on the bench |
 | Terminals | all pluggable: 3 × 5.08 mm 15 A (mains in, relay 1, relay 2), 1 × 3.81 mm 4-pole (CTs) |
 | GPIO | every unused GPIO on a 2 × 9 header footprint (holes only, nothing fitted) |
+| Qwiic | one Qwiic / STEMMA QT port (JST SH, 3.3 V I2C on GPIO6 / GPIO7, 4.7 kΩ pull-ups) |
 | Board | 80 × 80 mm, 2 layers, every part on the top side |
-| Cost | about $15.90 a board for 30, $12.20 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
+| Cost | about $16.20 a board for 30, $12.50 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
 
 **Contents:** [How it works](#how-it-works) · [Schematic](#schematic) · [Circuit board](#circuit-board) ·
 [Case](#case) · [Safety](#safety) · [Wiring](#wiring) · [Firmware](#firmware) ·
@@ -99,7 +100,7 @@ label.
 
 ![USB-C](docs/img/sch_usb.png)
 
-**ESP32-C6 module, EN and BOOT buttons, status LED and the GPIO header**
+**ESP32-C6 module, EN and BOOT buttons, status LED, the Qwiic port and the GPIO header**
 
 ![MCU](docs/img/sch_mcu.png)
 
@@ -159,8 +160,11 @@ and stitched with vias. The LDO's ground pin opens straight into the top pour wi
 | ![F.Silkscreen](docs/img/layer_f_silk.png) | ![F.Mask](docs/img/layer_f_mask.png) |
 
 The GPIO header (J6) carries 3V3, 5V, GND and GPIO 0, 1, 3, 4, 5, 6, 7, 8, 14, 15, 18, 19, 20 and 21.
+The Qwiic port (J7, on the top edge beside the buttons) is a 4-pin JST SH socket for 3.3 V I2C sensors and
+displays: pin 1 GND, 2 3V3, 3 SDA (GPIO6), 4 SCL (GPIO7). It shares GPIO6 and GPIO7 with the header, and both
+lines have 4.7 kΩ pull-ups to 3V3, so those two header pins are pulled up whatever you use them for.
 The silkscreen marks the strapping pins (4, 5, 8, 15) with `*`. The top side names each plug: the CT pins
-behind their terminal, `RELAY 1` / `RELAY 2` with `COM NO` (left pin first) beside theirs, `MAINS` and `USB`.
+behind their terminal, `RELAY 1` / `RELAY 2` with `COM NO` (left pin first) beside theirs, `MAINS`, `USB` and `QWIIC`.
 The bottom side names every terminal pin.
 
 ## Case
@@ -168,11 +172,12 @@ The bottom side names every terminal pin.
 Three printed parts, built in build123d from the board's own dimensions ([`case/case.py`](case/case.py)):
 
 - **Cover:** the front shell, with a pillar at each of the board's four mounting holes. The plugs
-  stick out through openings in the bottom wall and USB-C through the top; the wall is solid below the
+  stick out through openings in the bottom wall, USB-C and the Qwiic port through the top; the wall is solid below the
   board, so nothing slips in under it to the mains solder joints. There are vents over the power
   module and beside the relays. The front face is closed; a short tube carries the status LED's light
   to a 0.6 mm thin window. The front face names every opening and its pins (MAINS L N, RELAY 1 and 2
-  COM NO, CT1 and CT2 + −, USB), cut 0.4 mm deep.
+  COM NO, CT1 and CT2 + −, USB, QWIIC), cut 0.4 mm deep. The Qwiic opening is 13 × 8 mm: the small plug ends
+  inside the wall, so the opening leaves 3 mm each side to grip it, and it is too low for a finger.
 - **Base:** the sealed back plate. Its only openings are the four screw holes, so nothing pushed in
   from the back (a screwdriver, the metal DIN rail) can reach the mains parts behind the board. A
   standoff rises from it to each mounting hole, and a rim locates it inside the cover's walls. A
@@ -250,6 +255,7 @@ to right:
 - `Relay 1` and `Relay 2` switches, always off after a reboot or power cut, with the coil hold above
   (`coil_hold: "100%"` turns it off);
 - the status LED;
+- an I2C bus on the Qwiic port (GPIO6 / GPIO7), which scans for devices at boot; add your sensor to it;
 - the BOOT button, which toggles relay 1. It's on the board, inside the closed case, so it's for the
   bench.
 
@@ -263,6 +269,7 @@ on. Logs go to the USB port, which leaves the ESP32's UART to the BL0939.
 | 17 | UART RX from BL0939 TX | 23 | relay 2 |
 | 12 / 13 | USB D− / D+ | 2 | status LED |
 | 9 | BOOT button | 8 | 10 kΩ pull-up (strapping) |
+| 6 / 7 | Qwiic SDA / SCL | | |
 
 **Calibration:** with a known resistive load and a meter, set each `*_cal` substitution to
 (its starting value × meter reading ÷ reported value). The energy sensors use the power factors.
@@ -279,6 +286,8 @@ The order files are in [`hw/out/jlc`](hw/out/jlc):
 3. **Check the placement preview before paying.** Every part should sit on its footprint and point
    the right way. Pay most attention to:
    - the ESP32-C6 module and USB-C;
+   - the Qwiic socket (J7): its opening must face the top board edge. Its rotation in the placement file is
+     unchecked, so turn it in the preview if it faces inward;
    - the BL0939;
    - the LDO (U3);
    - the diodes and transistors, and the polymer capacitor (C14): its + side faces the HLK-PM01;
@@ -286,16 +295,16 @@ The order files are in [`hw/out/jlc`](hw/out/jlc):
 4. **Plugs:** add the loose plugs from `plugs.csv` to the same order as parts: 3 × DB2EK-5.08-2P and
    1 × WJ15EDGK-3.81-4P per board.
 
-Cost estimate from [`cost.md`](hw/out/jlc/cost.md). Part prices are live JLC prices from 2026-11-22;
+Cost estimate from [`cost.md`](hw/out/jlc/cost.md). Part prices are live JLC prices from 2026-11-23;
 the fees, PCB and shipping figures are estimates, so check the real quote.
 
 | Boards | Total | Per board |
 |---|---|---|
-| 10 | $231 | $23.05 |
-| 20 | $367 | $18.37 |
-| 30 | $476 | $15.87 |
-| 50 | $701 | $14.03 |
-| 100 | $1224 | $12.24 |
+| 10 | $236 | $23.59 |
+| 20 | $375 | $18.76 |
+| 30 | $486 | $16.21 |
+| 50 | $714 | $14.29 |
+| 100 | $1247 | $12.47 |
 
 The most expensive parts per board, at 30 boards:
 
@@ -307,7 +316,7 @@ The most expensive parts per board, at 30 boards:
 | BL0939 | $0.68 |
 | ZMPT107-1 | $0.42 |
 
-The 14 Extended parts add $3 each per order.
+The 15 Extended parts add $3 each per order.
 
 ## Building it from source
 

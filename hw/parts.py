@@ -44,6 +44,10 @@ _LIST = [
          extra={"body_mm": (18.4, 10.2, 15.5), "coil_mw": 400, "contact_a": 16, "hipot_kv": 4}),
     Part("usbc", "C165948", "Connector:USB_C_Receptacle_USB2.0_16P",
          "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12", "USB-C", mpn="TYPE-C-31-M-12"),
+    Part("qwiic", "C160404", "Connector_Generic_MountingPin:Conn_01x04_MountingPin",
+         "Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal", "Qwiic",
+         rotation=180, mpn="SM04B-SRSS-TB(LF)(SN)",
+         extra={"pitch": 1.0, "body_mm": (6.0, 4.25, 2.95)}),
     Part("ldo", "C51118", "Regulator_Linear:AP2112K-3.3", "Package_TO_SOT_SMD:SOT-23-5", "AP2112K-3.3",
          rotation=180, mpn="AP2112K-3.3TRG1",
          extra={"dropout_mv": 250, "dropout_at_ma": 600, "imax_ma": 600}),  # datasheet: 250 mV typ @ 600 mA
@@ -71,6 +75,7 @@ _LIST = [
     Part("r1k", "C21190", "Device:R", _R0603, "1k", per_board=5),
     Part("r470", "C23179", "Device:R", _R0603, "470R", per_board=3),
     Part("r10k", "C25804", "Device:R", _R0603, "10k", per_board=6),
+    Part("r4k7", "C23162", "Device:R", _R0603, "4.7k", per_board=2),
     Part("r5k1", "C23186", "Device:R", _R0603, "5.1k", per_board=3),
     Part("r22", "C23345", "Device:R", _R0603, "22R 1%", per_board=2),
     Part("r33", "C23140", "Device:R", _R0603, "33R 1%"),

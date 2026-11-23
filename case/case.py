@@ -177,6 +177,9 @@ def lid_labels(f):
             out.append(("100-240V~", c["x"] + pitch / 2, LABEL_ROWS[2], LABEL_NOTE, None))
     usb = next(c for c in f["connectors"] if c["kind"] == "usbc")
     out.append(("USB", usb["x"], h - LABEL_ROWS[0], LABEL_NAME, None))
+    qwiic = next((c for c in f["connectors"] if c["kind"] == "qwiic"), None)
+    if qwiic:
+        out.append(("QWIIC", qwiic["x"], h - LABEL_ROWS[0], LABEL_NAME, None))
     return [(s, x, y, size, wd if wd is not None else _text(s, size).bounding_box().size.X)
             for s, x, y, size, wd in out]
 

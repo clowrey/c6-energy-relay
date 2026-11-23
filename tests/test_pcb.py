@@ -314,9 +314,9 @@ def test_plug_openings_start_at_the_board(features):
 
 
 def test_top_side_names_the_plugs():
-    """The top silkscreen says what each plug is: CT pins, both relays with their pin order, mains, USB."""
+    """The top silkscreen says what each plug is: CT pins, both relays with their pin order, mains, USB, QWIIC."""
     text = (HW / "c6-energy-relay.kicad_pcb").read_text(encoding="utf8")
-    for label in ("CT1+", "CT1-", "CT2+", "CT2-", "RELAY 1", "RELAY 2", "COM NO", "MAINS", "100-240V~", "USB"):
+    for label in ("CT1+", "CT1-", "CT2+", "CT2-", "RELAY 1", "RELAY 2", "COM NO", "MAINS", "100-240V~", "USB", "QWIIC"):
         assert f'(gr_text "{label}"' in text, label
 
 
@@ -331,3 +331,15 @@ def test_ldo_ground_pin_opens_into_the_pour(board_dump):
             assert hits == [], (c["net"], hits[:3])
     vias = [c for c in board_dump["copper"] if c["kind"] == "PCB_VIA" and c["net"] == "/GND"]
     assert any(abs(v["start"][0] - x0) < 2.0 and abs(v["start"][1] - (y0 + y1) / 2) < 2.0 for v in vias)
+
+
+def test_qwiic_connector_faces_edge(board_dump, features):
+    """Qwiic connector J7 sits on the top edge of the low-voltage side, facing outward, clear of the antenna."""
+    q = next(c for c in features["connectors"] if c["ref"] == "J7")
+    w, h = features["outline_mm"]
+    assert q["kind"] == "qwiic" and q["edge"] == "top"
+    assert h - q["y"] <= 5.0
+    ax0, _, _, _ = features["antenna_keepout"]
+    assert q["x"] + q["w"] / 2 < ax0
+    fp = next(f for f in board_dump["footprints"] if f["ref"] == "J7")
+    assert round(fp["rot"]) % 360 == 180
