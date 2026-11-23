@@ -115,6 +115,8 @@ label.
 80 × 80 mm, 2 layers, 1.6 mm, every part on the top side. All the terminals are on the bottom edge,
 from left to right: the CTs, the mains input, relay 1 and relay 2. That keeps every wire in one place,
 and the low-voltage CT terminal at the far end from the relay contacts. USB-C is on the top edge.
+The plug headers stick out 3 mm past the bottom edge, flush with the outside of the case wall, and USB-C
+1.25 mm past the top edge, so plugs go in easily with the case on.
 The ESP32-C6's antenna points out of the top-right corner, with no copper under it on either layer.
 
 | Top | Bottom |
@@ -159,7 +161,9 @@ and stitched with vias. The LDO's ground pin opens straight into the top pour wi
 |---|---|
 | ![F.Silkscreen](docs/img/layer_f_silk.png) | ![F.Mask](docs/img/layer_f_mask.png) |
 
-The GPIO header (J6) carries 3V3, 5V, GND and GPIO 0, 1, 3, 4, 5, 6, 7, 8, 14, 15, 18, 19, 20 and 21.
+The GPIO header (J6) carries 3V3, 5V, GND and GPIO 0, 1, 3, 4, 5, 6, 7, 8, 14, 15, 18, 19, 20 and 21. Power
+comes first, then ground, then the GPIOs (one row reads 3V3, GND, 4, 0, 6 …; the other 5V, GND, 3, 5, 1 …), so
+a sensor's supply, ground and signal wires sit side by side.
 The Qwiic port (J7, on the top edge beside the buttons) is a 4-pin JST SH socket for 3.3 V I2C sensors and
 displays: pin 1 GND, 2 3V3, 3 SDA (GPIO6), 4 SCL (GPIO7). It shares GPIO6 and GPIO7 with the header, and both
 lines have 4.7 kΩ pull-ups to 3V3, so those two header pins are pulled up whatever you use them for.

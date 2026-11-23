@@ -147,3 +147,9 @@ def test_qwiic_port_and_pullups():
     for net in (sda_net, scl_net):
         pu = [c for c in design.COMPONENTS if c.ref.startswith("R") and set(c.pins.values()) == {"3V3", net}]
         assert len(pu) == 1 and PARTS[pu[0].part].value == "4.7k", (net, pu)
+
+
+def test_header_power_beside_ground():
+    """The header starts 5V / 3V3, then GND / GND, then GPIOs: a sensor's supply, ground and signal sit side by side."""
+    assert design.HEADER_PINS[:4] == ["+5V", "3V3", "GND", "GND"]
+    assert all(n.startswith("IO") for n in design.HEADER_PINS[4:])

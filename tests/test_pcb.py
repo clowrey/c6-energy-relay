@@ -346,3 +346,18 @@ def test_qwiic_connector_faces_edge(board_dump, features):
     assert q["x"] + q["w"] / 2 < ax0
     fp = next(f for f in board_dump["footprints"] if f["ref"] == "J7")
     assert round(fp["rot"]) % 360 == 180
+
+
+def test_connectors_overhang_the_edge(features, board_dump):
+    """The plug headers stick out 3 mm past the bottom edge (flush with the outside of the case wall: 0.8 mm gap +
+    2.2 mm wall) and USB-C 1.25 mm past the top edge, so a plug finds them easily. USB-C's front shell legs keep
+    their copper 0.5 mm from the edge."""
+    w, h = features["outline_mm"]
+    kinds = {c["ref"]: c for c in features["connectors"]}
+    for ref in ("J1", "J2", "J3"):
+        assert kinds[ref]["y"] == pytest.approx(10.0 - 3.0), ref
+    assert kinds["J4"]["y"] == pytest.approx(6.05 - 3.0)
+    assert kinds["J5"]["y"] == pytest.approx(h - 3.7 + 1.25)
+    for p in board_dump["copper"]:
+        if p["kind"] == "pad" and p["ref"] == "J5" and p["net"]:
+            assert h - p["bbox"][3] >= 0.5, p

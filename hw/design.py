@@ -54,10 +54,11 @@ ESP_IO_PINS = {  # ESP32-C6-MINI-1 module pin -> GPIO (RXD0 = GPIO17, TXD0 = GPI
 }
 ESP_GND_PINS = ["1", "2", "11", "14"] + [str(n) for n in range(36, 54)]
 
-# 2 x 9 header (holes only): odd pins in one row, even in the other, ordered so the module's pins fan
-# out to it without crossings. Strapping pins (IO4, IO5, IO8, IO15) are marked on the silkscreen.
-HEADER_PINS = ["+5V", "3V3", "IO4", "IO3", "IO0", "IO5", "IO6", "IO1", "IO14", "IO7",
-               "IO8", "IO15", "IO19", "IO18", "IO21", "IO20", "GND", "GND"]
+# 2 x 9 header (holes only): odd pins in one row, even in the other. Power first, then ground, then the GPIOs,
+# so a sensor's supply, ground and signal wires sit side by side; the GPIOs are ordered so the module's pins
+# fan out to them without crossings. Strapping pins (IO4, IO5, IO8, IO15) are marked on the silkscreen.
+HEADER_PINS = ["+5V", "3V3", "GND", "GND", "IO3", "IO4", "IO5", "IO0", "IO1", "IO6",
+               "IO7", "IO14", "IO15", "IO8", "IO18", "IO19", "IO20", "IO21"]
 
 
 def _gpio_net(n: int) -> str:

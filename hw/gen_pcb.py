@@ -39,19 +39,26 @@ W, H = 80.0, 80.0
 OX, OY = 100.0, 50.0
 CORNER_R = 2.0
 
+# The plug headers along the bottom edge stick out TERM_OUT past it, so their mouths sit flush with the outside of
+# the case wall (0.8 mm gap + 2.2 mm wall) and a plug finds them easily. USB-C sticks out USB_OUT: as far as its
+# front shell legs allow (their pads keep 0.6 mm from the edge).
+TERM_OUT = 3.0
+USB_OUT = 1.25
+TERM_Y = 70.0 + TERM_OUT       # pin row of the 5.08 mm headers
+
 # ref: (x, y, rotation) in board coordinates (y down)
 PLACE = {
     # ---- mains ---------------------------------------------------------------------------------
-    "J1": (30.0, 70.0, 0), "F1": (23.0, 62.2, 90), "F2": (41.2, 62.2, 90),
+    "J1": (30.0, TERM_Y, 0), "F1": (23.0, 62.2, 90), "F2": (41.2, 62.2, 90),
     "RV1": (28.5, 55.5, 0), "PS1": (30.0, 49.0, 90),
     "T1": (10.5, 54.0, 180),
     # divider zigzag at 3.3 mm pitch between the fuses: pads of nodes two resistors apart (~120 V) keep
     # 1.5 mm; R4's N end sits right under RV1's N pad
     "R1": (27.0, 63.0, 270), "R2": (30.3, 63.0, 90), "R3": (33.6, 63.0, 270), "R4": (36.9, 63.0, 90),
-    "K1": (53.9, 57.5, 90), "J2": (53.9 - 2.54, 70.0, 0),
-    "K2": (72.0, 57.5, 90), "J3": (72.0 - 2.54, 70.0, 0),       # 1 mm contact copper to edge
+    "K1": (53.9, 57.5, 90), "J2": (53.9 - 2.54, TERM_Y, 0),
+    "K2": (72.0, 57.5, 90), "J3": (72.0 - 2.54, TERM_Y, 0),       # 1 mm contact copper to edge
     # ---- CT input and metering -----------------------------------------------------------------
-    "J4": (3.2, 73.95, 0),
+    "J4": (3.2, 73.95 + TERM_OUT, 0),
     # beads beside their burden columns, after the burden node (the CT loop is terminal -> burden only)
     "FB1": (1.2, 70.6, 90), "FB2": (5.01, 70.6, 90), "FB3": (8.82, 70.6, 90), "FB4": (12.38, 70.6, 90),
     "R8": (3.2, 66.6, 90), "R9": (7.01, 66.6, 90), "R10": (10.82, 66.6, 90), "R11": (13.93, 66.6, 90),   # R11 0.7 in: 6.5 mm to F1
@@ -65,7 +72,7 @@ PLACE = {
     "C6": (12.8, 27.0, 0), "R16": (20.1, 34.635, 270), "R17": (20.1, 29.5, 270),
     "TP1": (19.5, 40.8, 0), "TP2": (14.5, 40.8, 0), "TP3": (17.0, 40.8, 0),
     # ---- USB, power ----------------------------------------------------------------------------
-    "J5": (11.0, 4.2, 180), "R28": (10.0, 11.6, 270), "R29": (12.0, 11.6, 270), "R20": (18.5, 7.2, 0), "R21": (5.6, 11.6, 270),
+    "J5": (11.0, 3.7 - USB_OUT, 180), "R28": (10.0, 11.6, 270), "R29": (12.0, 11.6, 270), "R20": (18.5, 7.2, 0), "R21": (5.6, 11.6, 270),
     "D1": (20.5, 11.8, 180), "R27": (18.5, 15.4, 270),
     "U3": (44.0, 12.2, 0), "C8": (43.2, 15.1, 0), "C10": (45.5, 7.6, 90), "C12": (44.8, 18.2, 90),
     "C14": (37.5, 11.0, 90),
@@ -89,8 +96,9 @@ def _relay_copper(k):
     """COM and NO contact copper for relay k: 5 mm wide, 4 mm apart (the open contact sees line
     voltage), from the relay pin down to the terminal pin."""
     cx = PLACE[f"K{k}"][0]
-    com = [(cx - 7.0, 60.4), (cx - 2.0, 60.4), (cx - 2.0, 72.4), (cx - 7.0, 72.4)]
-    no = [(cx + 2.0, 62.9), (cx + 7.0, 62.9), (cx + 7.0, 72.4), (cx + 2.0, 72.4)]
+    y1 = TERM_Y + 2.4
+    com = [(cx - 7.0, 60.4), (cx - 2.0, 60.4), (cx - 2.0, y1), (cx - 7.0, y1)]
+    no = [(cx + 2.0, 62.9), (cx + 7.0, 62.9), (cx + 7.0, y1), (cx + 2.0, y1)]
     return ({f"K{k}_COM": com, f"K{k}_NO": no},
             {f"K{k}_COM": [(cx - 5.5, 66.5), (cx - 5.5, 69.5)], f"K{k}_NO": [(cx + 5.5, 68.0), (cx + 5.5, 71.0)]})
 
@@ -535,11 +543,12 @@ def silkscreen(board):
         x, y, _ = PLACE[ref]
         pitch = 3.81 if ref == "J4" else 5.08
         for i, lab in enumerate(labels):
-            text(board, lab, x + i * pitch, 78.4, 0.9, layer=B)
+            text(board, lab, x + i * pitch, 74.6 if ref == "J4" else 78.4, 0.9, layer=B)    # J4: above its pins
     text(board, "L", 30.0, 66.3, 1.0, bold=True)
     text(board, "N/L2", 35.08, 66.3, 0.8, bold=True)
-    text(board, "RELAY 1", PLACE["K1"][0], 75.8, 1.0, layer=B, bold=True)
-    text(board, "RELAY 2", PLACE["K2"][0], 75.8, 1.0, layer=B, bold=True)
+    # beside each relay header, below the bare contact copper (the header's slot is where the name used to be)
+    text(board, "RELAY 1", PLACE["K1"][0] - 9.9, 76.6, 1.0, layer=B, bold=True)
+    text(board, "RELAY 2", PLACE["K2"][0] - 9.9, 76.6, 1.0, layer=B, bold=True)
     # what each plug is, on the top side: the CT pins above their filter resistors, the relays beside their
     # headers (left pin first), USB beside its socket
     for i, lab in enumerate(("CT1+", "CT1-", "CT2+", "CT2-")):
@@ -566,6 +575,9 @@ def silkscreen(board):
         if col == 0:            # first column: left-aligned, clear of PS1's outline on the left
             t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT)
             t.SetPosition(P(x - 0.75, t.GetPosition().y / 1e6 - OY))
+            if lab == "3V3":    # GND stands right beside it: end 3V3 short of that label
+                t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_RIGHT)
+                t.SetPosition(P(x + 1.05, t.GetPosition().y / 1e6 - OY))
     t = text(board, "GPIO   * = strapping pin", x0 - 0.75, 38.5, 0.8)
     t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT)
     text(board, "EN", PLACE["SW1"][0], PLACE["SW1"][1] + 3.6, 0.8)
@@ -585,7 +597,7 @@ def features(board) -> dict:
         body_w = n * pitch + (0.88 if kind == "term381" else 2.0 if kind == "qwiic" else 0)
         x0 = x - (pitch / 2 + (0.44 if kind == "term381" else 0))
         if edge == "bottom":
-            env = [x0 - 0.5, -plug_len, z_span[0], x0 + body_w + 0.5, 0.0, z_span[1]]
+            env = [x0 - 0.5, -plug_len - TERM_OUT, z_span[0], x0 + body_w + 0.5, 0.0, z_span[1]]
         elif kind == "qwiic":
             # SHR-04V-S-B plug: 7.0 mm wide with its ears, 2.8 mm high, on z = 1.6..4.5, and it ends inside the
             # wall. 11 x 6 mm envelope (the cover adds 1 mm all round: a 13 x 8 mm opening) leaves 3 mm each side
