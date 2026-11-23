@@ -164,7 +164,8 @@ The Qwiic port (J7, on the top edge beside the buttons) is a 4-pin JST SH socket
 displays: pin 1 GND, 2 3V3, 3 SDA (GPIO6), 4 SCL (GPIO7). It shares GPIO6 and GPIO7 with the header, and both
 lines have 4.7 kΩ pull-ups to 3V3, so those two header pins are pulled up whatever you use them for.
 The silkscreen marks the strapping pins (4, 5, 8, 15) with `*`. The top side names each plug: the CT pins
-behind their terminal, `RELAY 1` / `RELAY 2` with `COM NO` (left pin first) beside theirs, `MAINS`, `USB` and `QWIIC`.
+behind their terminal, `RELAY 1` / `RELAY 2` with `COM NO` (left pin first) beside theirs, `MAINS`, `USB` and `QWIIC`. The Qwiic pins are named in pin order below the socket (`SCL SDA 3V3 GND`)
+and again on the bottom side, in the order you see them from there.
 The bottom side names every terminal pin.
 
 ## Case

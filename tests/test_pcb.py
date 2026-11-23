@@ -318,6 +318,9 @@ def test_top_side_names_the_plugs():
     text = (HW / "c6-energy-relay.kicad_pcb").read_text(encoding="utf8")
     for label in ("CT1+", "CT1-", "CT2+", "CT2-", "RELAY 1", "RELAY 2", "COM NO", "MAINS", "100-240V~", "USB", "QWIIC"):
         assert f'(gr_text "{label}"' in text, label
+    # the Qwiic pinout: beside the port on top, and on the bottom in the order seen from there
+    top, bottom = (re.search(rf'\(gr_text "{s}"[^)]*\)\s*\(layer "([^"]+)"', text) for s in ("SCL SDA 3V3 GND", "GND 3V3 SDA SCL"))
+    assert top and top.group(1) == "F.SilkS" and bottom and bottom.group(1) == "B.SilkS"
 
 
 def test_ldo_ground_pin_opens_into_the_pour(board_dump):

@@ -549,6 +549,12 @@ def silkscreen(board):
         text(board, "COM NO", x, 76.0, 0.8, bold=True)
     text(board, "USB", 19.2, 3.0, 1.0, bold=True)
     text(board, "QWIIC", 44.2, 1.45, 0.9, bold=True)
+    # Qwiic pin names in the order of the pins: left to right on top, and left to right as read from the bottom
+    qx = PLACE["J7"][0]
+    names = [design.pin_net("J7", p).replace("IO6", "SDA").replace("IO7", "SCL") for p in ("4", "3", "2", "1")]
+    text(board, " ".join(names), qx, 6.95, 0.8)
+    text(board, "QWIIC", qx, 2.0, 1.0, layer=B, bold=True)
+    text(board, " ".join(reversed(names)), qx, 4.0, 0.9, layer=B)
     # GPIO header pin names: odd row (y0) labelled below it, even row (y0 - 2.54) above it
     x0, y0, _ = PLACE["J6"]
     strap = {"IO4", "IO5", "IO8", "IO15"}
