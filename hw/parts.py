@@ -72,9 +72,12 @@ _LIST = [
     Part("r470", "C23179", "Device:R", _R0603, "470R", per_board=3),
     Part("r10k", "C25804", "Device:R", _R0603, "10k", per_board=6),
     Part("r5k1", "C23186", "Device:R", _R0603, "5.1k", per_board=3),
-    Part("r22", "C23345", "Device:R", _R0603, "22R 1%", per_board=3),
-    Part("r27k", "C137340", "Device:R", "Resistor_SMD:R_1206_3216Metric", "27k 1206", per_board=4,
-         mpn="RC1206FR-0727KL"),  # 200 V each; 4 x 27k = 108k feeds the ZMPT107 2.2 mA at 240 V
+    Part("r22", "C23345", "Device:R", _R0603, "22R 1%", per_board=2),
+    Part("r33", "C23140", "Device:R", _R0603, "33R 1%"),
+    # 200 V, 250 mW each; 4 x 51k = 204k feeds the ZMPT107 1.2 mA at 240 V and turns 0.28 W into heat there
+    # (4 x 27k made 0.53 W)
+    Part("r51k", "C17992", "Device:R", "Resistor_SMD:R_1206_3216Metric", "51k 1206", per_board=4,
+         mpn="1206W4F5102T5E", extra={"volts": 200, "mw": 250}),
     Part("r0r3", "C59882", "Device:R", "Resistor_SMD:R_1206_3216Metric", "0.3R 1%", per_board=4),
     # --- capacitors ---------------------------------------------------------------------------
     Part("c33n", "C21117", "Device:C", _C0603, "33nF", per_board=5),

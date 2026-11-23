@@ -31,7 +31,7 @@
 <text x="660.0" y="64.0" text-anchor="middle" font-size="12" fill="#4a5163">VBUS via SS14 → +5 V</text>
 <rect x="160" y="170" width="100" height="60" rx="7" fill="#f6c9c4" stroke="#1d2330" stroke-width="1.3"/>
 <text x="210.0" y="196.0" text-anchor="middle" font-weight="600">R1–R4</text>
-<text x="210.0" y="212.0" text-anchor="middle" font-weight="400">4 × 27 kΩ</text>
+<text x="210.0" y="212.0" text-anchor="middle" font-weight="400">4 × 51 kΩ</text>
 <rect x="275" y="170" width="110" height="60" rx="7" fill="#e9e1f7" stroke="#1d2330" stroke-width="1.3"/>
 <text x="330.0" y="196.0" text-anchor="middle" font-weight="600">T1 ZMPT107-1</text>
 <text x="330.0" y="212.0" text-anchor="middle" font-weight="400">2 mA : 2 mA CT</text>

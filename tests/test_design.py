@@ -113,3 +113,18 @@ def test_usb_series_resistors():
         assert {r for r, _ in design.NETS[sock]} == {"J5", rs[0].ref}
         assert {r for r, _ in design.NETS[chip]} == {"U1", rs[0].ref}
     assert "esd" not in PARTS
+
+
+def test_voltage_divider_power_and_signal():
+    """At 264 V (240 V + 10 %) each divider resistor stays under half its power and voltage rating, and the
+    signal on VP stays under the BL0939's 70 mV rms."""
+    chain = [design.comp(r) for r in ("R1", "R2", "R3", "R4")]
+    assert len({c.part for c in chain}) == 1
+    part = PARTS[chain[0].part]
+    ohms = float(part.value.split("k")[0]) * 1e3
+    amps = 264 / (4 * ohms)
+    assert amps * amps * ohms * 1e3 <= 0.5 * part.extra["mw"]
+    assert amps * ohms <= 0.5 * part.extra["volts"]
+    burden = float(PARTS[design.comp("R6").part].value.split("R")[0])
+    assert 30 <= amps * burden * 1e3 <= 0.7 * 70          # mV rms on VP
+    assert amps <= 2e-3                                    # ZMPT107-1: 2 mA rated

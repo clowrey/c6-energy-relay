@@ -5,11 +5,13 @@
 #
 # Starting factors: ESPHome's bl0939 scales for a 1 mOhm shunt (1 mV/A) and a 0.51k / 1.95M divider.
 # This board's CTs (100 A : 50 mA) work into 0.6 ohm, 0.3 mV/A, so current reads x 1/0.3 = 3.33; the
-# ZMPT107 runs from 4 x 27k into 22 ohm, 0.204 mV/V against ESPHome's 0.2615, so voltage reads x 1.28;
-# power and energy x 3.33 x 1.28 = 4.28. Then calibrate once with a known load and a meter: multiply
+# ZMPT107 runs from 4 x 51k into 33 ohm, 0.162 mV/V against ESPHome's 0.2615, so voltage reads x 1.62;
+# power and energy x 3.33 x 1.62 = 5.39. Then calibrate once with a known load and a meter: multiply
 # each factor by (meter reading / reported value). The energy sensors use the power factors. At 120 V
 # line-neutral the signal is half the 240 V one; the same calibration covers both.
 # Relays always start off after a reboot or power cut (ALWAYS_OFF): a load never comes back on its own.
+# Each coil gets full voltage for coil_pull_in, then PWM at coil_hold (the relay's datasheet allows a hold at
+# 50 % of rated voltage). At 60 % a held coil makes about a third of the heat. coil_hold "100%" turns this off.
 # If a channel reads negative power, turn the CT round (or swap its two wires).
 
 substitutions:
@@ -21,11 +23,13 @@ substitutions:
   relay2_pin: GPIO23
   led_pin: GPIO2
   boot_pin: GPIO9
-  voltage_cal: "1.28"
+  coil_hold: "60%"
+  coil_pull_in: 300ms
+  voltage_cal: "1.62"
   current1_cal: "3.33"
   current2_cal: "3.33"
-  power1_cal: "4.28"
-  power2_cal: "4.28"
+  power1_cal: "5.39"
+  power2_cal: "5.39"
 
 esphome:
   name: ${name}
@@ -113,17 +117,63 @@ sensor:
     name: WiFi Signal
     update_interval: 60s
 
+output:
+  - platform: ledc
+    id: relay1_coil
+    pin: ${relay1_pin}
+    frequency: 20000Hz      # above hearing; the coil and its flyback diode smooth the current
+  - platform: ledc
+    id: relay2_coil
+    pin: ${relay2_pin}
+    frequency: 20000Hz
+
+script:
+  - id: relay1_pull_in
+    mode: restart
+    then:
+      - output.turn_on: relay1_coil
+      - delay: ${coil_pull_in}
+      - if:
+          condition:
+            switch.is_on: relay1
+          then:
+            - output.set_level:
+                id: relay1_coil
+                level: ${coil_hold}
+  - id: relay2_pull_in
+    mode: restart
+    then:
+      - output.turn_on: relay2_coil
+      - delay: ${coil_pull_in}
+      - if:
+          condition:
+            switch.is_on: relay2
+          then:
+            - output.set_level:
+                id: relay2_coil
+                level: ${coil_hold}
+
 switch:
-  - platform: gpio
+  - platform: template
     id: relay1
     name: Relay 1
-    pin: ${relay1_pin}
+    optimistic: true
     restore_mode: ALWAYS_OFF
-  - platform: gpio
+    turn_on_action:
+      - script.execute: relay1_pull_in
+    turn_off_action:
+      - script.stop: relay1_pull_in
+      - output.turn_off: relay1_coil
+  - platform: template
     id: relay2
     name: Relay 2
-    pin: ${relay2_pin}
+    optimistic: true
     restore_mode: ALWAYS_OFF
+    turn_on_action:
+      - script.execute: relay2_pull_in
+    turn_off_action:
+      - script.stop: relay2_pull_in
+      - output.turn_off: relay2_coil
 
 status_led:
   pin: ${led_pin}

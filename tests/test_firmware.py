@@ -117,3 +117,18 @@ def test_energy_total_is_the_sum():
     """Energy Total adds the two calibrated energies instead of scaling the raw sum by channel 1's factor."""
     assert "platform: template" in YAML.read_text()
     assert "id(energy_1).state + id(energy_2).state" in YAML.read_text()
+
+
+def test_relay_coils_pull_in_then_hold():
+    """Each relay gets full coil voltage first and then a PWM hold no lower than the datasheet's 50 %; switching
+    off stops a pull-in that is still running, so it cannot re-energise the coil."""
+    text = YAML.read_text()
+    hold = re.search(r'^\s*coil_hold:\s*"(\d+)%"', text, re.M)
+    assert hold and 50 <= int(hold.group(1)) <= 100
+    for k in (1, 2):
+        script = text.split(f"- id: relay{k}_pull_in")[1].split("- id:")[0].split("\nswitch:")[0]
+        assert script.index(f"output.turn_on: relay{k}_coil") < script.index("delay: ${coil_pull_in}") \
+            < script.index("level: ${coil_hold}")
+        assert f"switch.is_on: relay{k}" in script
+        sw = text.split(f"id: relay{k}\n")[1].split("- platform:")[0]
+        assert sw.index(f"script.stop: relay{k}_pull_in") < sw.index(f"output.turn_off: relay{k}_coil")

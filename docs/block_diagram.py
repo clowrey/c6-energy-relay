@@ -53,7 +53,7 @@ def main():
     arrow([(760, 70), (560, 70)], "VBUS via SS14 → +5 V")
 
     # voltage sense
-    box(160, 170, 100, 60, ["R1–R4", "4 × 27 kΩ"], MAINS_BOX)
+    box(160, 170, 100, 60, ["R1–R4", "4 × 51 kΩ"], MAINS_BOX)
     box(275, 170, 110, 60, ["T1 ZMPT107-1", "2 mA : 2 mA CT"], BRIDGE_BOX)
     arrow([(210, 100), (210, 170)])
     arrow([(260, 200), (275, 200)])

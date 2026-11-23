@@ -19,14 +19,14 @@ contactor coils). It is designed for JLCPCB to build fully assembled. It sits on
 |---|---|
 | MCU | ESP32-C6-MINI-1-N4: Wi-Fi 6, BLE, 802.15.4 (Thread/Zigbee capable), PCB antenna |
 | Metering | BL0939 on UART: voltage, 2 × current, 2 × active power, 2 × energy |
-| Voltage sense | ZMPT107-1 current-type transformer, fed through 4 × 27 kΩ from the line |
+| Voltage sense | ZMPT107-1 current-type transformer, fed through 4 × 51 kΩ from the line |
 | Current sense | 2 CT clamps with bare leads (100 A : 50 mA type, e.g. SCT-013-000), 0.6 Ω burden each |
 | Relays | 2 × Hongfa HF32FV-16 (16 A SPST-NO), dry contacts, for loads up to 10 A |
 | Supply | 100–240 V AC: 120 V line–neutral or 240 V leg–leg, chosen at install. HLK-PM01 isolated 5 V, or USB-C on the bench |
 | Terminals | all pluggable: 3 × 5.08 mm 15 A (mains in, relay 1, relay 2), 1 × 3.81 mm 4-pole (CTs) |
 | GPIO | every unused GPIO on a 2 × 9 header footprint (holes only, nothing fitted) |
 | Board | 80 × 80 mm, 2 layers, every part on the top side |
-| Cost | about $15.90 a board for 30, $12.30 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
+| Cost | about $15.90 a board for 30, $12.20 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
 
 **Contents:** [How it works](#how-it-works) · [Schematic](#schematic) · [Circuit board](#circuit-board) ·
 [Case](#case) · [Safety](#safety) · [Wiring](#wiring) · [Firmware](#firmware) ·
@@ -48,9 +48,10 @@ board the two sides are kept 6.5 mm apart.
   HLK-PM01 makes an isolated 5 V, 600 mA, with a 220 µF solid polymer capacitor on it. On the bench, USB-C powers the board through an SS14 diode
   instead. An AP2112K LDO makes 3.3 V for the ESP32 and the BL0939; its low dropout keeps it
   regulating from USB minus the diode.
-- **Voltage:** four 27 kΩ resistors in series feed about 2 mA from the line into the ZMPT107-1, a
-  2 mA : 2 mA current transformer. Its secondary drives a 22 Ω load, and the BL0939 reads that
-  voltage on VP. At 120 V the signal is half the 240 V one; calibration covers both.
+- **Voltage:** four 51 kΩ resistors in series feed about 1.2 mA at 240 V (0.6 mA at 120 V) from the line into the ZMPT107-1, a
+  2 mA : 2 mA current transformer. Its secondary drives a 33 Ω load, and the BL0939 reads that
+  voltage on VP. At 120 V the signal is half the 240 V one; calibration covers both. The four resistors
+  turn 0.28 W into heat at 240 V (0.07 W at 120 V).
 - **Current:** each CT clamp (50 mA at 100 A) works into a 0.6 Ω burden (two 0.3 Ω 1 % resistors,
   centre to ground) right at the terminal, then ferrite beads and a 1 kΩ / 33 nF filter into the
   BL0939. The beads carry only the BL0939's input current, so a failed bead can't open the CT.
@@ -59,7 +60,9 @@ board the two sides are kept 6.5 mm apart.
 - **Relays:** each relay coil runs from 5 V through an MMBT3904 transistor (470 Ω base resistor,
   about 5 mA, so it saturates fully at the coil's 80–93 mA; 10 kΩ pull-down so it stays off while
   the ESP32 boots) with a 1N4148W flyback diode. GPIO22 and
-  GPIO23 drive them. The contacts are dry: COM and NO go to their own terminal and switch whatever
+  GPIO23 drive them. The firmware gives a coil full voltage for 0.3 s, then holds it with PWM at 60 %
+  (the relay's datasheet allows a hold at half the rated voltage), so a held coil makes about a third of
+  the heat: roughly 0.15 W instead of 0.4 W. The contacts are dry: COM and NO go to their own terminal and switch whatever
   you wire through them.
 - **USB-C** goes straight to the ESP32-C6's native USB (GPIO12/13, through 22 Ω series resistors; there is no ESD protection chip),
   for flashing and logs without a USB-serial chip or buttons.
@@ -80,7 +83,7 @@ label.
 
 ![Mains input](docs/img/sch_mains.png)
 
-**Voltage sense:** the divider into the ZMPT107-1, and its 22 Ω load
+**Voltage sense:** the divider into the ZMPT107-1, and its 33 Ω load
 
 ![Voltage sense](docs/img/sch_vsense.png)
 
@@ -244,7 +247,8 @@ to right:
 [`firmware/c6-energy-relay.yaml`](firmware/c6-energy-relay.yaml) is a starter ESPHome config. It has:
 
 - the BL0939 sensors: voltage, current, power and energy;
-- `Relay 1` and `Relay 2` switches, always off after a reboot or power cut;
+- `Relay 1` and `Relay 2` switches, always off after a reboot or power cut, with the coil hold above
+  (`coil_hold: "100%"` turns it off);
 - the status LED;
 - the BOOT button, which toggles relay 1. It's on the board, inside the closed case, so it's for the
   bench.
@@ -263,7 +267,7 @@ on. Logs go to the USB port, which leaves the ESP32's UART to the BL0939.
 **Calibration:** with a known resistive load and a meter, set each `*_cal` substitution to
 (its starting value × meter reading ÷ reported value). The energy sensors use the power factors.
 The starting values convert ESPHome's BL0939 scaling (a 1 mΩ shunt and a 0.51 kΩ / 1.95 MΩ divider) to
-this board: current × 3.33 (CTs give 0.3 mV/A), voltage × 1.28 (0.204 mV/V) and power × 4.28.
+this board: current × 3.33 (CTs give 0.3 mV/A), voltage × 1.62 (0.162 mV/V) and power × 5.39.
 
 ## Ordering at JLCPCB
 
@@ -287,11 +291,11 @@ the fees, PCB and shipping figures are estimates, so check the real quote.
 
 | Boards | Total | Per board |
 |---|---|---|
-| 10 | $231 | $23.07 |
-| 20 | $368 | $18.39 |
-| 30 | $477 | $15.89 |
-| 50 | $702 | $14.05 |
-| 100 | $1226 | $12.26 |
+| 10 | $231 | $23.05 |
+| 20 | $367 | $18.37 |
+| 30 | $476 | $15.87 |
+| 50 | $701 | $14.03 |
+| 100 | $1224 | $12.24 |
 
 The most expensive parts per board, at 30 boards:
 

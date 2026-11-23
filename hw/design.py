@@ -140,14 +140,14 @@ for i, (ct, ip) in enumerate((("CT1P", "IP1"), ("CT1N", "IN1"), ("CT2P", "IP2"),
         C(f"C{1 + i}", "c33n", {"1": ip, "2": "GND"}, block="meter"),
     ]
 COMPONENTS += [
-    # voltage: ZMPT primary from L_F, then 4 x 27k back to N_F (chain on the N side keeps the layout
-    # free of L/N crossings); 22R secondary load
+    # voltage: ZMPT primary from L_F, then 4 x 51k back to N_F (chain on the N side keeps the layout
+    # free of L/N crossings); 33R secondary load (39 mV rms on VP at 240 V; the BL0939 takes 70)
     C("T1", "zmpt", {"1": "L_F", "2": "ZP1", "3": "VS", "4": "GND"}, block="vsense"),
-    C("R1", "r27k", {"1": "ZP1", "2": "VD1"}, block="vsense"),
-    C("R2", "r27k", {"1": "VD1", "2": "VD2"}, block="vsense"),
-    C("R3", "r27k", {"1": "VD2", "2": "VD3"}, block="vsense"),
-    C("R4", "r27k", {"1": "VD3", "2": "N_F"}, block="vsense"),
-    C("R6", "r22", {"1": "VS", "2": "GND"}, block="vsense"),
+    C("R1", "r51k", {"1": "ZP1", "2": "VD1"}, block="vsense"),
+    C("R2", "r51k", {"1": "VD1", "2": "VD2"}, block="vsense"),
+    C("R3", "r51k", {"1": "VD2", "2": "VD3"}, block="vsense"),
+    C("R4", "r51k", {"1": "VD3", "2": "N_F"}, block="vsense"),
+    C("R6", "r33", {"1": "VS", "2": "GND"}, block="vsense"),
     C("R7", "r1k", {"1": "VS", "2": "VP"}, block="vsense"),
     C("C5", "c33n", {"1": "VP", "2": "GND"}, block="vsense"),
 ]
