@@ -318,3 +318,16 @@ def test_top_side_names_the_plugs():
     text = (HW / "c6-energy-relay.kicad_pcb").read_text(encoding="utf8")
     for label in ("CT1+", "CT1-", "CT2+", "CT2-", "RELAY 1", "RELAY 2", "COM NO", "MAINS", "100-240V~", "USB"):
         assert f'(gr_text "{label}"' in text, label
+
+
+def test_ldo_ground_pin_opens_into_the_pour(board_dump):
+    """U3's ground pin is its heat path: nothing but ground beside it on its outer side, and a via to the
+    bottom pour within 2 mm."""
+    (pad,) = [p for p in board_dump["copper"] if p["kind"] == "pad" and p["ref"] == "U3" and p["net"] == "/GND"]
+    x0, y0, x1, y1 = pad["bbox"]
+    for c in board_dump["copper"]:
+        if c["kind"] in ("PCB_TRACK", "PCB_ARC") and c["layer"] == "F.Cu" and c["net"] != "/GND":
+            hits = [p for p in _track_pts(c) if x0 - 2.0 < p[0] < x0 and y0 < p[1] < y1]
+            assert hits == [], (c["net"], hits[:3])
+    vias = [c for c in board_dump["copper"] if c["kind"] == "PCB_VIA" and c["net"] == "/GND"]
+    assert any(abs(v["start"][0] - x0) < 2.0 and abs(v["start"][1] - (y0 + y1) / 2) < 2.0 for v in vias)

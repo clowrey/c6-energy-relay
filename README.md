@@ -143,7 +143,7 @@ in [`hw/routes.py`](hw/routes.py), and [`hw/route.py`](hw/route.py) rounds the b
 1 mm radius on signals, 2.5 × the width on wider tracks. Corners where another branch joins stay
 sharp, so the joint stays connected. The fan-out from the ESP32 to the GPIO header runs as splines
 ([`hw/spline.py`](hw/spline.py) turns them into arcs, since KiCad tracks can't be splines). Signal tracks are 0.2 mm, and ground is poured on both layers
-and stitched with vias.
+and stitched with vias. The LDO's ground pin opens straight into the top pour with a via beside it, since that pin is how it sheds heat.
 
 <p align="center"><img src="docs/img/layer_detail.png" width="60%" alt="Close-up: spline tracks from the ESP32-C6 to the GPIO header"></p>
 

@@ -347,7 +347,7 @@ def build() -> pcbnew.BOARD:
             if c.part:
                 fp.SetField(key, val)
                 fp.GetField(key).SetVisible(False)
-        if c.ref in ("J5", "J6"):
+        if c.ref in ("J5", "J6"):   # J6: tracks leave its ground pins too few spokes for a thermal relief
             fp.SetLocalZoneConnection(pcbnew.ZONE_CONNECTION_FULL)
         if c.ref == "J6":       # the pin labels frame the header; its outline would cross them
             for it in list(fp.GraphicalItems()):
