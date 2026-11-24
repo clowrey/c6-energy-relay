@@ -17,17 +17,17 @@ contactor coils). It is designed for JLCPCB to build fully assembled. It sits on
 
 | | |
 |---|---|
-| MCU | ESP32-C6-MINI-1-N4: Wi-Fi 6, BLE, 802.15.4 (Thread/Zigbee capable), PCB antenna |
+| MCU | ESP32-C5 (DOIT ESPC5-32-H4, 4 MB flash): dual-band 2.4 + 5 GHz Wi-Fi 6, BLE, 802.15.4 (Thread/Zigbee capable), PCB antenna |
 | Metering | BL0939 on UART: voltage, 2 × current, 2 × active power, 2 × energy |
 | Voltage sense | ZMPT107-1 current-type transformer, fed through 4 × 51 kΩ from the line |
 | Current sense | 2 CT clamps with bare leads (100 A : 50 mA type, e.g. SCT-013-000), 0.6 Ω burden each |
 | Relays | 2 × Hongfa HF32FV-16 (16 A SPST-NO), dry contacts, for loads up to 10 A |
 | Supply | 100–240 V AC: 120 V line–neutral or 240 V leg–leg, chosen at install. HLK-PM01 isolated 5 V, or USB-C on the bench |
 | Terminals | all pluggable: 3 × 5.08 mm 15 A (mains in, relay 1, relay 2), 1 × 3.81 mm 4-pole (CTs) |
-| GPIO | every unused GPIO on a 2 × 9 header footprint (holes only, nothing fitted) |
-| Qwiic | one Qwiic / STEMMA QT port (JST SH, 3.3 V I2C on GPIO6 / GPIO7, 4.7 kΩ pull-ups) |
-| Board | 80 × 80 mm, 2 layers, every part on the top side |
-| Cost | about $16.20 a board for 30, $12.50 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
+| GPIO | every unused GPIO on a 2 × 8 header footprint (holes only, nothing fitted) |
+| Qwiic | one Qwiic / STEMMA QT port (JST SH, 3.3 V I2C on GPIO1 / GPIO0, 4.7 kΩ pull-ups) |
+| Board | 90 × 86 mm, 2 layers, every part on the top side |
+| Cost | about $15.00 a board for 30, $12.10 for 100, assembled with plugs (estimate, see [below](#ordering-at-jlcpcb)) |
 
 **Contents:** [How it works](#how-it-works) · [Schematic](#schematic) · [Circuit board](#circuit-board) ·
 [Case](#case) · [Safety](#safety) · [Wiring](#wiring) · [Firmware](#firmware) ·
@@ -47,8 +47,10 @@ board the two sides are kept 6.5 mm apart.
   varistor can fail as a short across the line); Littelfuse's 443 fits the same pads but breaks only
   50 A. No copper runs under them. A 10D561K varistor (MOV) clamps surges after the fuses. The potted
   HLK-PM01 makes an isolated 5 V, 600 mA, with a 220 µF solid polymer capacitor on it. On the bench, USB-C powers the board through an SS14 diode
-  instead. An AP2112K LDO makes 3.3 V for the ESP32 and the BL0939; its low dropout keeps it
-  regulating from USB minus the diode.
+  instead. An AMS1117-3.3 LDO (a JLC Basic part) makes 3.3 V for the ESP32 and the BL0939. Its dropout
+  is 1.1 V at 800 mA, and from USB the diode leaves about 4.5 V, so it still regulates through the
+  module's 5 GHz transmit peaks (about 400 mA), with little to spare. Its tab sits on a 3.3 V copper area
+  that spreads its heat.
 - **Voltage:** four 51 kΩ resistors in series feed about 1.2 mA at 240 V (0.6 mA at 120 V) from the line into the ZMPT107-1, a
   2 mA : 2 mA current transformer. Its secondary drives a 33 Ω load, and the BL0939 reads that
   voltage on VP. At 120 V the signal is half the 240 V one; calibration covers both. The four resistors
@@ -56,16 +58,16 @@ board the two sides are kept 6.5 mm apart.
 - **Current:** each CT clamp (50 mA at 100 A) works into a 0.6 Ω burden (two 0.3 Ω 1 % resistors,
   centre to ground) right at the terminal, then ferrite beads and a 1 kΩ / 33 nF filter into the
   BL0939. The beads carry only the BL0939's input current, so a failed bead can't open the CT.
-- **Metering:** the BL0939 measures continuously and sends readings over UART (GPIO16/17, 4800 baud)
-  to the ESP32-C6, which runs ESPHome and reports to Home Assistant.
+- **Metering:** the BL0939 measures continuously and sends readings over UART0 (GPIO11/12, 4800 baud)
+  to the ESP32-C5, which runs ESPHome and reports to Home Assistant.
 - **Relays:** each relay coil runs from 5 V through an MMBT3904 transistor (470 Ω base resistor,
   about 5 mA, so it saturates fully at the coil's 80–93 mA; 10 kΩ pull-down so it stays off while
-  the ESP32 boots) with a 1N4148W flyback diode. GPIO22 and
-  GPIO23 drive them. The firmware gives a coil full voltage for 0.3 s, then holds it with PWM at 60 %
+  the ESP32 boots) with a 1N4148W flyback diode. GPIO23 and
+  GPIO24 drive them. The firmware gives a coil full voltage for 0.3 s, then holds it with PWM at 60 %
   (the relay's datasheet allows a hold at half the rated voltage), so a held coil makes about a third of
   the heat: roughly 0.15 W instead of 0.4 W. The contacts are dry: COM and NO go to their own terminal and switch whatever
   you wire through them.
-- **USB-C** goes straight to the ESP32-C6's native USB (GPIO12/13, through 22 Ω series resistors; there is no ESD protection chip),
+- **USB-C** goes straight to the ESP32-C5's native USB (GPIO13/14, through 22 Ω series resistors; there is no ESD protection chip),
   for flashing and logs without a USB-serial chip or buttons.
 
 ## Schematic
@@ -100,7 +102,7 @@ label.
 
 ![USB-C](docs/img/sch_usb.png)
 
-**ESP32-C6 module, EN and BOOT buttons, status LED, the Qwiic port and the GPIO header**
+**ESP32-C5 module, EN and BOOT buttons, status LED, the Qwiic port and the GPIO header**
 
 ![MCU](docs/img/sch_mcu.png)
 
@@ -112,12 +114,15 @@ label.
 
 ## Circuit board
 
-80 × 80 mm, 2 layers, 1.6 mm, every part on the top side. All the terminals are on the bottom edge,
+90 × 86 mm, 2 layers, 1.6 mm, every part on the top side. All the terminals are on the bottom edge,
 from left to right: the CTs, the mains input, relay 1 and relay 2. That keeps every wire in one place,
-and the low-voltage CT terminal at the far end from the relay contacts. USB-C is on the top edge.
+and the low-voltage CT terminal at the far end from the relay contacts. USB-C and the Qwiic port are on
+the top edge.
 The plug headers stick out 3 mm past the bottom edge, flush with the outside of the case wall, and USB-C
 1.25 mm past the top edge, so plugs go in easily with the case on.
-The ESP32-C6's antenna points out of the top-right corner, with no copper under it on either layer.
+The ESP32-C5 module stands in the top-right corner with its antenna at the top edge, away from the relays
+and the power module, and no copper under or beside the antenna on either layer. The Qwiic port is at
+the far left, so its cable stays clear of the antenna.
 
 | Top | Bottom |
 |---|---|
@@ -149,9 +154,9 @@ in [`hw/routes.py`](hw/routes.py), and [`hw/route.py`](hw/route.py) rounds the b
 1 mm radius on signals, 2.5 × the width on wider tracks. Corners where another branch joins stay
 sharp, so the joint stays connected. The fan-out from the ESP32 to the GPIO header runs as splines
 ([`hw/spline.py`](hw/spline.py) turns them into arcs, since KiCad tracks can't be splines). Signal tracks are 0.2 mm, and ground is poured on both layers
-and stitched with vias. The LDO's ground pin opens straight into the top pour with a via beside it, since that pin is how it sheds heat.
+and stitched with vias. The LDO's tab (its 3.3 V output, and how it sheds heat) sits on a solid 3.3 V copper area of about 46 mm².
 
-<p align="center"><img src="docs/img/layer_detail.png" width="60%" alt="Close-up: spline tracks from the ESP32-C6 to the GPIO header"></p>
+<p align="center"><img src="docs/img/layer_detail.png" width="60%" alt="Close-up: tracks from the ESP32-C5 module to the GPIO header"></p>
 
 | All copper and top silkscreen | Top copper | Bottom copper |
 |---|---|---|
@@ -161,13 +166,13 @@ and stitched with vias. The LDO's ground pin opens straight into the top pour wi
 |---|---|
 | ![F.Silkscreen](docs/img/layer_f_silk.png) | ![F.Mask](docs/img/layer_f_mask.png) |
 
-The GPIO header (J6) carries 3V3, 5V, GND and GPIO 0, 1, 3, 4, 5, 6, 7, 8, 14, 15, 18, 19, 20 and 21. Power
-comes first, then ground, then the GPIOs (one row reads 3V3, GND, 4, 0, 6 …; the other 5V, GND, 3, 5, 1 …), so
-a sensor's supply, ground and signal wires sit side by side.
-The Qwiic port (J7, on the top edge beside the buttons) is a 4-pin JST SH socket for 3.3 V I2C sensors and
-displays: pin 1 GND, 2 3V3, 3 SDA (GPIO6), 4 SCL (GPIO7). It shares GPIO6 and GPIO7 with the header, and both
-lines have 4.7 kΩ pull-ups to 3V3, so those two header pins are pulled up whatever you use them for.
-The silkscreen marks the strapping pins (4, 5, 8, 15) with `*`. The top side names each plug: the CT pins
+The GPIO header (J6) carries 3V3, 5V, GND and GPIO 2, 3, 4, 5, 7, 8, 9, 10, 15, 25, 26 and 27. Power
+comes first, then ground, then the GPIOs in the order they leave the module (one row reads 3V3, GND, 3, 8,
+10, 4, 15, 26; the other 5V, GND, 2, 7, 9, 5, 27, 25), so a sensor's supply, ground and signal wires sit
+side by side. GPIO27 has a 10 kΩ pull-up (R19): the ESP32-C5 needs it high at reset for USB flashing.
+The Qwiic port (J7, at the left end of the top edge) is a 4-pin JST SH socket for 3.3 V I2C sensors and
+displays: pin 1 GND, 2 3V3, 3 SDA (GPIO1), 4 SCL (GPIO0), with 4.7 kΩ pull-ups to 3V3.
+The silkscreen marks the strapping pins (2, 3, 7, 25, 26, 27) with `*`: keep them free of pull-downs at reset. The top side names each plug: the CT pins
 behind their terminal, `RELAY 1` / `RELAY 2` with `COM NO` (left pin first) beside theirs, `MAINS`, `USB` and `QWIIC`. The Qwiic pins are named in pin order below the socket (`SCL SDA 3V3 GND`)
 and again on the bottom side, in the order you see them from there.
 The bottom side names every terminal pin.
@@ -260,7 +265,7 @@ to right:
 - `Relay 1` and `Relay 2` switches, always off after a reboot or power cut, with the coil hold above
   (`coil_hold: "100%"` turns it off);
 - the status LED;
-- an I2C bus on the Qwiic port (GPIO6 / GPIO7), which scans for devices at boot; add your sensor to it;
+- an I2C bus on the Qwiic port (GPIO1 / GPIO0), which scans for devices at boot; add your sensor to it;
 - the BOOT button, which toggles relay 1. It's on the board, inside the closed case, so it's for the
   bench.
 
@@ -270,11 +275,11 @@ on. Logs go to the USB port, which leaves the ESP32's UART to the BL0939.
 
 | GPIO | Use | GPIO | Use |
 |---|---|---|---|
-| 16 | UART TX to BL0939 RX | 22 | relay 1 |
-| 17 | UART RX from BL0939 TX | 23 | relay 2 |
-| 12 / 13 | USB D− / D+ | 2 | status LED |
-| 9 | BOOT button | 8 | 10 kΩ pull-up (strapping) |
-| 6 / 7 | Qwiic SDA / SCL | | |
+| 11 | UART TX to BL0939 RX | 23 | relay 1 |
+| 12 | UART RX from BL0939 TX | 24 | relay 2 |
+| 13 / 14 | USB D− / D+ | 6 | status LED |
+| 28 | BOOT button (strapping) | 27 | 10 kΩ pull-up (strapping, on the header) |
+| 1 / 0 | Qwiic SDA / SCL | | |
 
 **Calibration:** with a known resistive load and a meter, set each `*_cal` substitution to
 (its starting value × meter reading ÷ reported value). The energy sensors use the power factors.
@@ -285,51 +290,55 @@ this board: current × 3.33 (CTs give 0.3 mV/A), voltage × 1.62 (0.162 mV/V) an
 
 The order files are in [`hw/out/jlc`](hw/out/jlc):
 
-1. **PCB:** upload `gerbers.zip`: 2 layers, 1.6 mm, 1 oz, HASL, any colour.
-2. **Assembly:** choose **Standard PCBA** (the board has through-hole parts), top side, and upload
-   `bom.csv` and `cpl.csv`.
+1. **PCB:** upload `gerbers.zip`: 2 layers, 1.6 mm, 1 oz, HASL (with lead or lead-free), any colour. JLC's
+   default finish is now OSP, which rules out Economic PCBA.
+2. **Assembly:** choose **Economic PCBA**, top side, and upload `bom.csv` and `cpl.csv`. The ESP32-C5
+   module has castellated edge pads, so it needs no X-ray inspection; JLC hand-solders the through-hole
+   parts.
 3. **Check the placement preview before paying.** Every part should sit on its footprint and point
    the right way. Pay most attention to:
-   - the ESP32-C6 module and USB-C;
+   - the ESP32-C5 module (its antenna end at the top board edge) and USB-C;
    - the Qwiic socket (J7): its opening must face the top board edge;
    - the BL0939;
-   - the LDO (U3);
+   - the LDO (U3): its wide tab is pin 2, on the 3.3 V copper area;
    - the diodes and transistors, and the polymer capacitor (C14): its + side faces the HLK-PM01;
    - both buttons. A button turned 90° holds EN or BOOT low.
 
-   All 33 parts were checked this way in JLC's preview on 2026-11-23, against the pad positions in the
-   board file. JLC changes its part drawings now and then, so look again before paying.
+   All 33 parts were checked this way in JLC's preview (the module, the LDO and D1 again on 2026-11-24,
+   after the re-layout), against the pad positions in the board file. JLC changes its part drawings now
+   and then, so look again before paying.
 4. **Plugs:** add the loose plugs from `plugs.csv` to the same order as parts: 3 × DB2EK-5.08-2P and
    1 × WJ15EDGK-3.81-4P per board.
 
-Cost estimate from [`cost.md`](hw/out/jlc/cost.md). Part prices are live JLC prices from 2026-11-23;
+Cost estimate from [`cost.md`](hw/out/jlc/cost.md). Part prices are live JLC prices from 2026-11-24;
 the fees, PCB and shipping figures are estimates, so check the real quote.
 
 | Boards | Total | Per board |
 |---|---|---|
-| 10 | $236 | $23.59 |
-| 20 | $375 | $18.76 |
-| 30 | $486 | $16.21 |
-| 50 | $714 | $14.29 |
-| 100 | $1247 | $12.47 |
+| 10 | $206 | $20.55 |
+| 20 | $339 | $16.97 |
+| 30 | $450 | $15.00 |
+| 50 | $671 | $13.41 |
+| 100 | $1209 | $12.09 |
 
-JLC's own quote on 2026-11-23 for 30 boards (Standard PCBA, top side, HASL with lead) was **$469.65**
-before shipping, duties and the loose plugs: $24.80 for the boards and $444.85 for assembly, of which
-$313.71 is parts. That is about $40 more than the estimate for the same items. JLC adds an X-ray
-inspection ($24.90) for the ESP32 module's hidden pads, and the bare boards cost more than estimated.
-With the plugs (about $26) it comes to about $16.50 a board before shipping.
+JLC's own quote on 2026-11-23 for 10 boards with this module (Economic PCBA, top side) was **$163.49**
+before shipping, duties and the loose plugs: $5.00 for the boards and $158.49 for assembly, of which
+$108.19 is parts, $27.81 Extended-part fees and $9.79 setup and stencil. That quote still had the
+earlier LDO, an Extended part; the AMS1117 is a Basic part. With Standard PCBA, 30 boards with the
+earlier ESP32-C6-MINI-1 came to $469.65, including a $24.90 X-ray inspection for that module's
+hidden pads.
 
 The most expensive parts per board, at 30 boards:
 
 | Part | Cost per board |
 |---|---|
-| ESP32-C6-MINI-1-N4 | $3.22 |
-| HLK-PM01 | $2.16 |
+| ESPC5-32-H4 (ESP32-C5) | $2.80 |
+| HLK-PM01 | $2.17 |
 | two relays | $1.88 |
 | BL0939 | $0.68 |
-| ZMPT107-1 | $0.42 |
+| ZMPT107-1 | $0.41 |
 
-The 15 Extended parts add $3 each per order.
+The estimate counts $3 per order for each of the 14 Extended parts.
 
 ## Building it from source
 

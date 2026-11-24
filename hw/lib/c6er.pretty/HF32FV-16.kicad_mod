@@ -7,7 +7,7 @@
 	(property "Reference" "REF**"
 		(at 0 -6.6 0)
 		(layer "F.SilkS")
-		(uuid "17e13532-5695-4e1b-a17c-4021d5383301")
+		(uuid "c1e15630-18fb-49cb-9b96-ba71aa4aedbc")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17,7 +17,7 @@
 	(property "Value" "HF32FV-16"
 		(at 0 0 0)
 		(layer "F.Fab")
-		(uuid "f5287a61-6729-4902-ae58-aa8dee35e672")
+		(uuid "fcf2b86d-3f8b-4b03-b0b6-fc075e3af4b6")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -28,7 +28,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "8cd5a368-1012-41ec-870f-f9ccef7797cf")
+		(uuid "cda684d5-4fac-467d-884c-3191c1520d4a")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -39,7 +39,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "00105938-5ce0-476b-a049-a5c7bf09d4af")
+		(uuid "59b38e33-e4e7-45c8-97ec-b467b4176547")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -57,7 +57,7 @@
 		)
 		(fill no)
 		(layer "F.SilkS")
-		(uuid "9e5a1645-e18f-4c04-b90d-8511f3d3625c")
+		(uuid "8e0248a3-f6e7-4a5f-a7c8-97fca766dc4d")
 	)
 	(fp_rect
 		(start -9.7 -5.6)
@@ -68,7 +68,7 @@
 		)
 		(fill no)
 		(layer "F.CrtYd")
-		(uuid "0217563c-f9f5-4062-8b5a-eb60581cbbfa")
+		(uuid "314f0e71-321b-43f1-82fc-31ef76b7e1b4")
 	)
 	(fp_rect
 		(start -9.2 -5.1)
@@ -79,7 +79,7 @@
 		)
 		(fill no)
 		(layer "F.Fab")
-		(uuid "c72f2682-4359-47cf-b962-924df0cee578")
+		(uuid "4bf3e252-1db1-4d64-bea8-abe587a2d9e8")
 	)
 	(pad "1" thru_hole rect
 		(at 7.62 -3.8)
@@ -88,7 +88,7 @@
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(thermal_bridge_angle 45)
-		(uuid "7cc5abd9-f060-4458-b422-9a5f07e52d52")
+		(uuid "f62c23a9-773e-46d7-9a2c-1d74676fad14")
 	)
 	(pad "2" thru_hole circle
 		(at 7.62 3.8)
@@ -96,7 +96,7 @@
 		(drill 1.3)
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
-		(uuid "46974a90-6cfd-48e5-87df-7198a1c57f9b")
+		(uuid "080bf5cc-9f46-478b-9814-8ba7ea56e09c")
 	)
 	(pad "3" thru_hole oval
 		(at -5.08 -3.45)
@@ -105,7 +105,7 @@
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(thermal_bridge_angle 45)
-		(uuid "0e2e5c3c-a120-49ed-b0ee-cef6d1c8a5c7")
+		(uuid "ed836cdf-e70a-463d-88ef-904b78c0b18e")
 	)
 	(pad "4" thru_hole oval
 		(at -7.62 3.45)
@@ -114,7 +114,7 @@
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(thermal_bridge_angle 45)
-		(uuid "8b8113e0-1095-4d1f-b642-3e280e3a3c28")
+		(uuid "6bb77018-e54d-43e7-b54d-d6e995dea4a2")
 	)
 	(embedded_fonts no)
 	(model "${KIPRJMOD}/lib/c6er.3dshapes/HF32FV-16.step"

@@ -17,7 +17,7 @@
 <text x="330.0" y="66.0" text-anchor="middle" font-weight="600">PS1 HLK-PM01</text>
 <text x="330.0" y="82.0" text-anchor="middle" font-weight="400">isolated 5 V</text>
 <rect x="440" y="40" width="120" height="60" rx="7" fill="#c9dcf5" stroke="#1d2330" stroke-width="1.3"/>
-<text x="500.0" y="66.0" text-anchor="middle" font-weight="600">U3 AP2112K</text>
+<text x="500.0" y="66.0" text-anchor="middle" font-weight="600">U3 AMS1117-3.3</text>
 <text x="500.0" y="82.0" text-anchor="middle" font-weight="400">3.3 V LDO</text>
 <rect x="760" y="40" width="120" height="60" rx="7" fill="#c9dcf5" stroke="#1d2330" stroke-width="1.3"/>
 <text x="820.0" y="58.0" text-anchor="middle" font-weight="600">J5 USB-C</text>
@@ -45,8 +45,8 @@
 <text x="495.0" y="232.0" text-anchor="middle" font-weight="400">V, 2 × I, 2 × P,</text>
 <text x="495.0" y="248.0" text-anchor="middle" font-weight="400">energy</text>
 <rect x="620" y="160" width="260" height="120" rx="7" fill="#c9dcf5" stroke="#1d2330" stroke-width="1.3"/>
-<text x="750.0" y="200.0" text-anchor="middle" font-weight="600">U1 ESP32-C6-MINI-1</text>
-<text x="750.0" y="216.0" text-anchor="middle" font-weight="400">Wi-Fi 6, BLE, 802.15.4</text>
+<text x="750.0" y="200.0" text-anchor="middle" font-weight="600">U1 ESP32-C5 (ESPC5-32-H4)</text>
+<text x="750.0" y="216.0" text-anchor="middle" font-weight="400">2.4 + 5 GHz Wi-Fi 6, BLE, 802.15.4</text>
 <text x="750.0" y="232.0" text-anchor="middle" font-weight="400">PCB antenna</text>
 <text x="750.0" y="248.0" text-anchor="middle" font-weight="400">ESPHome / Home Assistant</text>
 <polyline points="500,100 500,160" fill="none" stroke="#1d2330" stroke-width="1.5" marker-end="url(#a1)"/>
@@ -65,7 +65,7 @@
 <text x="825.0" y="346.0" text-anchor="middle" font-weight="600">J7 Qwiic</text>
 <text x="825.0" y="362.0" text-anchor="middle" font-weight="400">3.3 V I2C</text>
 <polyline points="825,280 825,320" fill="none" stroke="#1d2330" stroke-width="1.5" marker-end="url(#a1)" marker-start="url(#a0)"/>
-<text x="855" y="304" text-anchor="middle" font-size="12" fill="#4a5163">GPIO6, 7</text>
+<text x="855" y="304" text-anchor="middle" font-size="12" fill="#4a5163">GPIO0, 1</text>
 <rect x="20" y="400" width="120" height="60" rx="7" fill="#f6c9c4" stroke="#1d2330" stroke-width="1.3"/>
 <text x="80.0" y="418.0" text-anchor="middle" font-weight="600">J2, J3</text>
 <text x="80.0" y="434.0" text-anchor="middle" font-weight="400">COM / NO</text>
@@ -78,7 +78,7 @@
 <text x="505.0" y="426.0" text-anchor="middle" font-weight="600">Q1, Q2 MMBT3904</text>
 <text x="505.0" y="442.0" text-anchor="middle" font-weight="400">+ flyback diodes</text>
 <polyline points="750,280 750,430 570,430" fill="none" stroke="#1d2330" stroke-width="1.5" marker-end="url(#a1)"/>
-<text x="660" y="422" text-anchor="middle" font-size="12" fill="#4a5163">GPIO22, GPIO23</text>
+<text x="660" y="422" text-anchor="middle" font-size="12" fill="#4a5163">GPIO23, GPIO24</text>
 <polyline points="440,430 385,430" fill="none" stroke="#1d2330" stroke-width="1.5" marker-end="url(#a1)"/>
 <text x="412.5" y="424.0" text-anchor="middle" font-size="12" fill="#4a5163">coil</text>
 <polyline points="275,430 140,430" fill="none" stroke="#1d2330" stroke-width="1.5" marker-end="url(#a1)"/>

@@ -73,10 +73,10 @@ MODELS = {
     # ceramic SMD fuse 10.5 x 3.2 x 3.2 with 2 mm metal end caps
     "Fuse_SMD_10.1x3.1": part(box(-3.2, -1.5, 3.2, 1.5, 0.1, 3.1), WHITE,
                              box(-5.25, -1.6, -3.2, 1.6, 0.0, 3.2) + box(3.2, -1.6, 5.25, 1.6, 0.0, 3.2)),
+    # DOIT ESPC5-32: 18 x 25.5 x 3.0 module, antenna end toward KiCad -y; shield over the rest
+    "ESPC5-32": part(box(-9.0, -12.75, 9.0, 12.75, 0.0, 0.8), GREEN,
+                     box(-8.4, -6.2, 8.4, 12.2, 0.8, 3.0)),
     # stock footprints whose KiCad model isn't installed everywhere (gen_pcb.py points them here)
-    # ESP32-C6-MINI-1: 13.2 x 16.6 x 2.4 module, antenna end toward KiCad -y; shield over the rest
-    "ESP32-C6-MINI-1": part(box(-6.6, -11.0, 6.6, 5.6, 0.0, 0.8), GREEN,
-                            box(-6.1, -4.7, 6.1, 5.1, 0.8, 2.4)),
     # TS-1187A: 5.1 x 5.1 x 1.5 tact switch with a round actuator
     "TS-1187A": part(box(-2.55, -2.55, 2.55, 2.55, 0.0, 1.2), BLACK,
                      Pos(0, 0, 1.35) * Cylinder(1.3, 0.3)),

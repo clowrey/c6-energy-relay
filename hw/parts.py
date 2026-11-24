@@ -30,8 +30,10 @@ _C0805 = "Capacitor_SMD:C_0805_2012Metric"
 
 _LIST = [
     # --- active / special parts ---------------------------------------------------------------
-    Part("esp", "C5736265", "RF_Module:ESP32-C6-MINI-1", "RF_Module:ESP32-C6-MINI-1",
-         "ESP32-C6-MINI-1-N4", mpn="ESP32-C6-MINI-1-N4"),
+    # ESP32-C5 (2.4 + 5 GHz Wi-Fi 6) in the WROOM-1 outline, castellated: JLC places it with Economic assembly and
+    # no X-ray (the ESP32-C6-MINI-1's bottom pads needed both). Espressif's own ESP32-C5-WROOM-1 had no JLC stock
+    Part("esp", "C52139914", "c6er:ESPC5-32", "c6er:ESPC5-32", "ESPC5-32-H4", mpn="ESPC5-32-H4",
+         extra={"body_mm": (18.0, 25.5, 3.0), "flash_mb": 4, "tx_peak_ma": 398}),   # 5 GHz 11a TX, DOIT table 5.2
     Part("bl0939", "C2836697", "c6er:BL0939", "Package_SO:SOIC-16_3.9x9.9mm_P1.27mm", "BL0939",
          rotation=270, mpn="BL0939"),
     Part("psu", "C209903", "Converter_ACDC:HLK-PM01", "Converter_ACDC:Converter_ACDC_Hi-Link_HLK-PMxx",
@@ -48,9 +50,10 @@ _LIST = [
          "Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal", "Qwiic",
          rotation=0, mpn="SM04B-SRSS-TB(LF)(SN)",        # checked in JLC's preview 2026-11-23
          extra={"pitch": 1.0, "body_mm": (6.0, 4.25, 2.95)}),
-    Part("ldo", "C51118", "Regulator_Linear:AP2112K-3.3", "Package_TO_SOT_SMD:SOT-23-5", "AP2112K-3.3",
-         rotation=270, mpn="AP2112K-3.3TRG1",            # checked in JLC's preview 2026-11-23
-         extra={"dropout_mv": 250, "dropout_at_ma": 600, "imax_ma": 600}),  # datasheet: 250 mV typ @ 600 mA
+    # JLC Basic (no extended-part fee). 1.1 V dropout at 800 mA: from USB, +5V is ~4.5 V after D1, still 4.4 V needed
+    Part("ldo", "C6186", "Regulator_Linear:AMS1117-3.3", "Package_TO_SOT_SMD:SOT-223-3_TabPin2", "AMS1117-3.3",
+         rotation=180, mpn="AMS1117-3.3",               # kicad-jlcpcb-tools value for SOT-223: check in JLC's preview
+         extra={"dropout_mv": 1100, "dropout_at_ma": 800, "imax_ma": 1000, "basic": True}),
     Part("schottky", "C2480", "Device:D_Schottky", "Diode_SMD:D_SMA", "SS14", mpn="SS14"),
     Part("npn", "C20526", "Transistor_BJT:MMBT3904", "Package_TO_SOT_SMD:SOT-23", "MMBT3904",
          rotation=180, per_board=2, mpn="MMBT3904"),
@@ -88,8 +91,8 @@ _LIST = [
     Part("c33n", "C21117", "Device:C", _C0603, "33nF", per_board=5),
     Part("c100n", "C14663", "Device:C", _C0603, "100nF", per_board=3),
     Part("c1u", "C15849", "Device:C", _C0603, "1uF", per_board=1),
-    Part("c10u", "C15850", "Device:C", _C0805, "10uF", per_board=2),
-    Part("c22u", "C45783", "Device:C", _C0805, "22uF", per_board=2),
+    Part("c10u", "C15850", "Device:C", _C0805, "10uF", per_board=1),
+    Part("c22u", "C45783", "Device:C", _C0805, "22uF", per_board=3),   # C10: AMS1117 output, which asks for 22 uF
     # solid polymer, 21 mohm: the same maker and kind as the CellKeeper board's bulk capacitor
     Part("c220u", "C46550461", "Device:C_Polarized", "Capacitor_SMD:CP_Elec_6.3x7.7", "220uF 16V polymer",
          rotation=0, mpn="MA16V220M6X8",                  # checked in JLC's preview 2026-11-23

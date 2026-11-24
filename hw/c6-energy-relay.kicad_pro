@@ -276,7 +276,7 @@
       },
       {
         "netclass": "LV",
-        "pattern": "/IO14"
+        "pattern": "/IO10"
       },
       {
         "netclass": "LV",
@@ -284,19 +284,19 @@
       },
       {
         "netclass": "LV",
-        "pattern": "/IO18"
+        "pattern": "/IO2"
       },
       {
         "netclass": "LV",
-        "pattern": "/IO19"
+        "pattern": "/IO25"
       },
       {
         "netclass": "LV",
-        "pattern": "/IO20"
+        "pattern": "/IO26"
       },
       {
         "netclass": "LV",
-        "pattern": "/IO21"
+        "pattern": "/IO27"
       },
       {
         "netclass": "LV",
@@ -312,15 +312,15 @@
       },
       {
         "netclass": "LV",
-        "pattern": "/IO6"
-      },
-      {
-        "netclass": "LV",
         "pattern": "/IO7"
       },
       {
         "netclass": "LV",
         "pattern": "/IO8"
+      },
+      {
+        "netclass": "LV",
+        "pattern": "/IO9"
       },
       {
         "netclass": "LV",

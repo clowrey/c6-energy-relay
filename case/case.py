@@ -229,7 +229,7 @@ def build_cover(f):
     # vents: top edge over the HLK, right edge beside the relays
     hot = f["hot_parts"][0]                          # PS1: x, y, w, h
     for i in range(6):
-        vx = hot[0] + 3.0 + i * 3.2
+        vx = hot[0] + 3.0 + i * 3.0
         cover -= box(vx, vx + 1.6, h + GAP - 0.5, y1 + 1, 5.0, Z_FRONT_IN - 3.0)
     for i in range(5):                               # above relay 2's contacts, not beside them
         vy = 31.0 + i * 3.2
@@ -356,8 +356,10 @@ def build_clip(f):
 
 def build_case(features: dict):
     """-> (base, cover, clip), solids in case coordinates."""
-    global RAIL_Y, Z_FRONT_IN, Z_FRONT_OUT
+    global HOOK_GUSSETS, BEAM_X0, BEAM_X1, RAIL_Y, Z_FRONT_IN, Z_FRONT_OUT
     w, h = features["outline_mm"]
+    HOOK_GUSSETS = tuple(w / 2 + d for d in (-30.0, -15.0, 0.0, 15.0, 30.0))
+    BEAM_X0, BEAM_X1 = 1.0, w - 1.0
     Z_FRONT_IN = Z_BOARD_TOP + features["max_component_height"] + FRONT_CLEAR
     Z_FRONT_OUT = Z_FRONT_IN + WALL
     RAIL_Y = h / 2

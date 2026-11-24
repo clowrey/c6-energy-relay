@@ -7,7 +7,7 @@
 	(property "Reference" "REF**"
 		(at 0 -3 0)
 		(layer "F.SilkS")
-		(uuid "17f241b1-689b-4c95-a8d3-4948040827b6")
+		(uuid "b5e8eb83-19cf-4e03-9778-8199510ce57b")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17,7 +17,7 @@
 	(property "Value" "Fuse_SMD_10.1x3.1"
 		(at 0 0 0)
 		(layer "F.Fab")
-		(uuid "26842482-a5cc-416b-adf0-dfdc13d589ac")
+		(uuid "263dfb6d-ab58-4efd-8d71-2b24f232bbfc")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -28,7 +28,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "02dcd74a-1e3b-4841-bf74-f8750a103204")
+		(uuid "3b55ed9e-a291-4a7f-9bfc-6eeaf016f90c")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -39,7 +39,7 @@
 		(at 0 0 0)
 		(layer "F.Fab")
 		(hide yes)
-		(uuid "7c31bfc8-5283-43ab-afdd-a6e4a34a55a4")
+		(uuid "b4e16c70-dedb-49e4-ae46-ec14a1c5007d")
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -56,7 +56,7 @@
 			(type default)
 		)
 		(layer "F.SilkS")
-		(uuid "574ddfda-0c11-4071-b837-0d6787aebcc8")
+		(uuid "411edfbd-0285-4981-b74c-a4aeca8d0ba8")
 	)
 	(fp_line
 		(start -2.9 1.75)
@@ -66,7 +66,7 @@
 			(type default)
 		)
 		(layer "F.SilkS")
-		(uuid "1f7dab98-fa68-46c3-85b4-f521fe59a017")
+		(uuid "297bf4f4-4499-4d0d-ad82-2346d5847ede")
 	)
 	(fp_rect
 		(start -6.25 -1.9)
@@ -77,7 +77,7 @@
 		)
 		(fill no)
 		(layer "F.CrtYd")
-		(uuid "9333dbd1-43c2-4a76-898b-dbb24981d529")
+		(uuid "7b29cfe2-f62f-4d59-94bf-b338456f80af")
 	)
 	(fp_rect
 		(start -5.25 -1.6)
@@ -88,7 +88,7 @@
 		)
 		(fill no)
 		(layer "F.Fab")
-		(uuid "04d3f490-5f7d-4613-bec1-bdf2b6239774")
+		(uuid "b002a515-09f9-40db-a12d-79bf889cf962")
 	)
 	(pad "1" smd roundrect
 		(at -4.6 0)
@@ -96,7 +96,7 @@
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(roundrect_rratio 0.1)
 		(thermal_bridge_angle 45)
-		(uuid "dc907702-5b4f-4dd1-9d05-b0f443065ec3")
+		(uuid "a9906e3d-837c-4ce0-81da-ca030ab9e788")
 	)
 	(pad "2" smd roundrect
 		(at 4.6 0)
@@ -104,7 +104,7 @@
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(roundrect_rratio 0.1)
 		(thermal_bridge_angle 45)
-		(uuid "4fa2804f-8480-484b-907d-c869406a35bf")
+		(uuid "3c3168cd-ba02-471f-b4d5-0b67f1648d9b")
 	)
 	(embedded_fonts no)
 	(model "${KIPRJMOD}/lib/c6er.3dshapes/Fuse_SMD_10.1x3.1.step"

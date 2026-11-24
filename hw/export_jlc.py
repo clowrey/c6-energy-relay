@@ -34,11 +34,11 @@ QTYS = (10, 20, 30, 50, 100)
 
 # Estimates (USD, Nov 2026 JLC price list; check the live quote): labelled as such in cost.md
 EXTENDED_FEE = 3.00          # per unique Extended part per order
-PCBA_SETUP = 25.00           # Standard PCBA (needed for through-hole assembly)
-STENCIL = 7.86
+PCBA_SETUP = 8.24 + 0.99     # Economic PCBA setup + nitrogen reflow (JLC quote 2026-11-23, 10 boards)
+STENCIL = 1.55
 SMT_JOINT = 0.0017
 THT_JOINT = 0.0173
-PCB_FAB = {10: 5.0, 20: 9.0, 30: 13.0, 50: 20.0, 100: 35.0}      # 2-layer 80 x 80 mm, HASL
+PCB_FAB = {10: 5.0, 20: 9.0, 30: 13.0, 50: 20.0, 100: 35.0}      # 2-layer 90 x 86 mm, HASL
 SHIPPING = {10: 20.0, 20: 25.0, 30: 30.0, 50: 40.0, 100: 60.0}   # DHL to the USA, rough
 
 
@@ -140,7 +140,7 @@ def cost(groups, offline=False):
     lines.append(f"- Unique parts: {len(groups)} placed + 2 loose plugs; Extended parts: {len(extended)} "
                  f"(${EXTENDED_FEE:.2f} each per order)")
     lines.append(f"- Joints per board: {smt} SMT, {tht} through-hole")
-    lines.append("- Standard PCBA (through-hole assembly needs it), one side\n")
+    lines.append("- Economic PCBA, one side (castellated module, no X-ray; through-hole parts hand-soldered)\n")
     lines.append("| Boards | Parts | Plugs | Extended fees | Setup + stencil | Joints | PCB (est.) | Shipping (est.) "
                  "| Total | Per board |")
     lines.append("|---|---|---|---|---|---|---|---|---|---|")

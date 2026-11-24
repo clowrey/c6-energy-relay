@@ -4,8 +4,9 @@ from collections import Counter
 from hw import design
 from hw.parts import PARTS
 
-ESP_GPIO = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23}  # ESP32-C6-MINI-1
-STRAPPING = {4, 5, 8, 9, 15}
+# DOIT ESPC5-32 (ESP32-C5): the GPIOs on its pads, and the chip's strapping pins (datasheet v1.5, ch. 3)
+ESP_GPIO = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 23, 24, 25, 26, 27, 28}
+STRAPPING = {2, 3, 7, 25, 26, 27, 28}
 
 
 def test_every_net_has_two_nodes():
@@ -28,15 +29,12 @@ def test_refs_unique_and_pins_exist():
 
 
 def test_header_has_all_unused_gpio():
-    # Qwiic I2C pins stay on the 2x9 GPIO header as well (keeps all 18 pins and their order)
-    i2c_pins = {design.GPIO["I2C_SDA"], design.GPIO["I2C_SCL"]}
-    used = set(design.GPIO.values()) - i2c_pins
+    assert design.ESP_GPIO == ESP_GPIO and design.STRAPPING == STRAPPING
+    used = set(design.GPIO.values())
     want = {f"IO{n}" for n in ESP_GPIO - used} | {"3V3", "+5V", "GND"}
-    assert len(design.HEADER_PINS) == 18
     assert want <= set(design.HEADER_PINS)
-    assert set(design.HEADER_PINS) <= want
-    for n in i2c_pins:
-        assert f"IO{n}" in design.HEADER_PINS
+    assert set(design.HEADER_PINS) <= want | {f"IO{design.GPIO['I2C_SDA']}", f"IO{design.GPIO['I2C_SCL']}"}
+    assert len(design.HEADER_PINS) % 2 == 0
 
 
 def test_header_pins_are_nets():
@@ -48,12 +46,13 @@ def test_header_pins_are_nets():
 
 def test_no_strapping_for_outputs():
     for name in ("RELAY1", "RELAY2", "LED"):
-        assert design.GPIO[name] not in STRAPPING | {12, 13, 16, 17}
+        assert design.GPIO[name] not in STRAPPING | {11, 13, 14}   # GPIO11 = TXD0: the ROM prints on it at boot
 
 
 def test_fixed_gpio():
     g = design.GPIO
-    assert (g["UART_TX"], g["UART_RX"], g["USB_DN"], g["USB_DP"], g["BOOT"]) == (16, 17, 12, 13, 9)
+    assert (g["USB_DN"], g["USB_DP"], g["BOOT"]) == (13, 14, 28)
+    assert design.pin_net("R19", "2") == "IO27" and design.pin_net("R19", "1") == "3V3"   # GPIO27 high: USB download
 
 
 def test_both_inputs_fused():
@@ -140,7 +139,6 @@ def test_qwiic_port_and_pullups():
     q = design.comp("J7")
     assert q.part == "qwiic" and q.lcsc == "C160404" and not q.dnp
     sda_g, scl_g = design.GPIO["I2C_SDA"], design.GPIO["I2C_SCL"]
-    assert (sda_g, scl_g) == (6, 7)
     assert sda_g not in STRAPPING and scl_g not in STRAPPING
     sda_net, scl_net = f"IO{sda_g}", f"IO{scl_g}"
     assert q.pins == {"1": "GND", "2": "3V3", "3": sda_net, "4": scl_net, "MP": "GND"}

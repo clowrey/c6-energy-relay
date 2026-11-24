@@ -19,9 +19,12 @@ def test_all_parts_in_stock_for_30(key):
 
 
 def test_ldo_dropout():
-    ldo = PARTS["ldo"]
-    assert ldo.extra["dropout_mv"] <= 300
-    assert ldo.extra["imax_ma"] >= 500
+    """On USB power +5V is VBUS less D1 (SS14, ~0.5 V): 4.5 V must still cover 3.3 V plus the dropout at the
+    module's transmit peak, and the regulator must carry that peak."""
+    ldo, esp = PARTS["ldo"], PARTS["esp"]
+    assert ldo.extra["dropout_at_ma"] >= esp.extra["tx_peak_ma"]
+    assert 5.0 - 0.5 >= 3.3 + ldo.extra["dropout_mv"] / 1000
+    assert ldo.extra["imax_ma"] >= 600
 
 
 def test_terminal_508_rating():

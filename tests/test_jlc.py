@@ -33,11 +33,12 @@ def test_bom_designators_match_pcb():
 
 def test_cpl_has_every_placed_part():
     rows = _rows("cpl.csv")
+    w, h = json.loads((HW / "out" / "board_features.json").read_text())["outline_mm"]
     assert sorted(r["Designator"] for r in rows) == sorted(c.ref for c in PLACED)
     for r in rows:
         assert r["Layer"] == "Top"
         x, y = float(r["Mid X"].rstrip("mm")), float(r["Mid Y"].rstrip("mm"))
-        assert 0 <= x <= 80 and 0 <= y <= 80, r          # origin at the board's lower-left corner
+        assert 0 <= x <= w and 0 <= y <= h, r            # origin at the board's lower-left corner
 
 
 def test_rotation_table_covers_cpl_footprints():

@@ -35,7 +35,7 @@ SECTIONS = {  # title on the sheet -> image name
     "Relays (dry contacts, 10 A use)": "sch_relays",
     "5 V / 3.3 V": "sch_power",
     "USB-C (native USB)": "sch_usb",
-    "ESP32-C6-MINI-1, buttons, LED, Qwiic, GPIO header": "sch_mcu",
+    "ESP32-C5 (ESPC5-32-H4), buttons, LED, Qwiic, GPIO header": "sch_mcu",
     "BL0939 metering, CT inputs": "sch_metering",
 }
 
@@ -123,7 +123,7 @@ def layers(width=1100):
             print(name, framed.size)
 
 
-def detail(width=4400, box=(0.52, 0.04, 0.92, 0.5)):
+def detail(width=4400, box=(0.5, 0.0, 0.98, 0.54)):
     """Close-up of the module fan-out to the GPIO header (box: fractions of the board image)."""
     from PIL import Image
     global LAYERS

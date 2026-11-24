@@ -45,7 +45,7 @@ def main():
     box(20, 40, 120, 60, ["J1", "L, N/L2", "100–240 V"], MAINS_BOX)
     box(160, 40, 100, 60, ["F1, F2, RV1", "fuses + MOV"], MAINS_BOX)
     box(275, 40, 110, 60, ["PS1 HLK-PM01", "isolated 5 V"], BRIDGE_BOX)
-    box(440, 40, 120, 60, ["U3 AP2112K", "3.3 V LDO"], LV_BOX)
+    box(440, 40, 120, 60, ["U3 AMS1117-3.3", "3.3 V LDO"], LV_BOX)
     box(760, 40, 120, 60, ["J5 USB-C", "bench power,", "flashing, logs"], LV_BOX)
     arrow([(140, 70), (160, 70)])
     arrow([(260, 70), (275, 70)])
@@ -61,7 +61,7 @@ def main():
 
     # metering and MCU
     box(420, 160, 150, 120, ["U2 BL0939", "energy metering", "V, 2 × I, 2 × P,", "energy"], LV_BOX)
-    box(620, 160, 260, 120, ["U1 ESP32-C6-MINI-1", "Wi-Fi 6, BLE, 802.15.4", "PCB antenna", "ESPHome / Home Assistant"], LV_BOX)
+    box(620, 160, 260, 120, ["U1 ESP32-C5 (ESPC5-32-H4)", "2.4 + 5 GHz Wi-Fi 6, BLE, 802.15.4", "PCB antenna", "ESPHome / Home Assistant"], LV_BOX)
     arrow([(500, 100), (500, 160)], "3.3 V", at=(522, 136))
     arrow([(540, 100), (540, 125), (680, 125), (680, 160)])
     arrow([(820, 100), (820, 160)], "USB D+/D−", at=(852, 136))
@@ -69,13 +69,13 @@ def main():
     box(440, 310, 130, 60, ["J4 CT1, CT2", "0.6 Ω burdens"], LV_BOX)
     arrow([(505, 310), (505, 280)], "IP/IN", at=(530, 300))
     box(770, 320, 110, 60, ["J7 Qwiic", "3.3 V I2C"], LV_BOX)
-    arrow([(825, 280), (825, 320)], "GPIO6, 7", at=(855, 304), both=True)
+    arrow([(825, 280), (825, 320)], "GPIO0, 1", at=(855, 304), both=True)
 
     # relays
     box(20, 400, 120, 60, ["J2, J3", "COM / NO", "dry contacts"], MAINS_BOX)
     box(275, 400, 110, 60, ["K1, K2", "HF32FV-16", "16 A relays"], BRIDGE_BOX)
     box(440, 400, 130, 60, ["Q1, Q2 MMBT3904", "+ flyback diodes"], LV_BOX)
-    arrow([(750, 280), (750, 430), (570, 430)], "GPIO22, GPIO23", at=(660, 422))
+    arrow([(750, 280), (750, 430), (570, 430)], "GPIO23, GPIO24", at=(660, 422))
     arrow([(440, 430), (385, 430)], "coil")
     arrow([(275, 430), (140, 430)], "contacts")
 

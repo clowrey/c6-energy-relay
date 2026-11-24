@@ -9,6 +9,7 @@ Dimensions are from the datasheets in hw/datasheets (fetched by hw/tools/fetch_d
   DB2ER-5.08     Dorabo right-angle pluggable header, drill 1.7, body 12 deep, pins 2.0 from the back
   WJ15EDGRC-3.81 Kangnex right-angle pluggable header, drill 1.4, body 7.25 deep, pins 1.2 from the back
   Fuse 10.1x3.1  Hongda 40T (10.5 x 3.2 x 3.2) or Littelfuse 443 (10.1 x 3.1 x 3.1) ceramic SMD fuse
+  ESPC5-32       DOIT ESP32-C5 module, 18 x 25.5 x 3, WROOM-1 land pattern (DOIT user manual V1.0, fig. 2.1 / 3.3)
 """
 from __future__ import annotations
 
@@ -110,6 +111,26 @@ def symbols() -> str:
     out.append(_symbol("HF32FV-16", "K", "HF32FV-16", "Hongfa HF32FV-16 16 A SPST-NO relay, 4 kV coil-contact",
                        "c6er:HF32FV-16", (-6.35, -5.08, 6.35, 5.08), pins, g, show_pin_names=False,
                        fields_right=True))
+
+    # DOIT ESPC5-32 (ESP32-C5, WROOM-1 format): pin names from the DOIT user manual V1.0, table 2.2
+    L, R = -15.24, 15.24
+    left = [("3", "EN", "input"), ("6", "IO0", "bidirectional"), ("7", "IO1", "bidirectional"),
+            ("4", "IO2", "bidirectional"), ("5", "IO3", "bidirectional"), ("17", "IO4", "bidirectional"),
+            ("16", "IO5", "bidirectional"), ("8", "IO6", "bidirectional"), ("9", "IO7", "bidirectional"),
+            ("10", "IO8", "bidirectional"), ("11", "IO9", "bidirectional"), ("12", "IO10", "bidirectional")]
+    right = [("25", "IO11/TXD0", "bidirectional"), ("24", "IO12/RXD0", "bidirectional"),
+             ("13", "IO13/USB_D-", "bidirectional"), ("14", "IO14/USB_D+", "bidirectional"),
+             ("19", "IO15", "bidirectional"), ("21", "IO23", "bidirectional"), ("23", "IO24", "bidirectional"),
+             ("26", "IO25", "bidirectional"), ("27", "IO26", "bidirectional"), ("18", "IO27", "bidirectional"),
+             ("15", "IO28/BOOT", "bidirectional"), ("20", "NC", "no_connect"), ("22", "NC", "no_connect")]
+    pins = [("2", "3V3", "power_in", 0, 20.32, 270)]
+    pins += [(n, nm, k, L, 13.97 - 2.54 * i, 0) for i, (n, nm, k) in enumerate(left)]
+    pins += [(n, nm, k, R, 13.97 - 2.54 * i, 180) for i, (n, nm, k) in enumerate(right)]
+    pins += [("1", "GND", "power_in", -2.54, -20.32, 90), ("28", "GND", "passive", 0, -20.32, 90),
+             ("29", "EPAD", "passive", 2.54, -20.32, 90)]
+    out.append(_symbol("ESPC5-32", "U", "ESPC5-32-H4",
+                       "DOIT ESPC5-32-H4: ESP32-C5 module, 2.4 + 5 GHz Wi-Fi 6, BLE 5, 802.15.4, 4 MB flash, PCB antenna",
+                       "c6er:ESPC5-32", (-12.7, -17.78, 12.7, 17.78), pins))
     out.append(")\n")
     return "".join(out)
 
@@ -258,6 +279,48 @@ def fp_fuse():
     return fp
 
 
+def _smd(fp, num, x, y, w, h, paste_margin=None):
+    p = pcbnew.PAD(fp)
+    p.SetAttribute(pcbnew.PAD_ATTRIB_SMD)
+    p.SetLayerSet(p.SMDMask())
+    p.SetNumber(str(num))
+    p.SetShape(pcbnew.PADSTACK.ALL_LAYERS, pcbnew.PAD_SHAPE_ROUNDRECT)
+    p.SetRoundRectRadiusRatio(pcbnew.PADSTACK.ALL_LAYERS, 0.2)
+    p.SetSize(pcbnew.PADSTACK.ALL_LAYERS, _v(w, h))
+    p.SetPosition(_v(x, y))
+    if paste_margin is not None:
+        p.SetLocalSolderPasteMargin(MM(paste_margin))
+    fp.Add(p)
+    return p
+
+
+def fp_espc5():
+    """DOIT ESPC5-32 (18 x 25.5 x 3 mm, the WROOM-1 outline), origin at the body centre, antenna toward -y.
+    Castellated pads at 1.27 mm, pad 1 / 28 7.49 mm from the antenna end, pad 14 / 15 1.5 mm from the other end
+    (DOIT fig. 3.3; the same as Espressif's ESP32-C6-WROOM-1 land pattern). Pads 1.5 x 0.9, 0.5 mm outside the body.
+    Ground pad 29: DOIT draws it 4.5 mm square but places it differently in its two figures (and Espressif's WROOM-1
+    pad sits elsewhere again), so the copper is 5.0 mm square over both readings, with paste only in its middle."""
+    fp = _new_fp("ESPC5-32", "DOIT ESPC5-32 ESP32-C5 module, 18 x 25.5 mm, 28 castellated pads + ground pad, PCB antenna")
+    fp.SetAttributes(pcbnew.FP_SMD)
+    for n in range(1, 15):
+        _smd(fp, n, -8.75, -5.26 + (n - 1) * 1.27, 1.5, 0.9)
+        _smd(fp, 29 - n, 8.75, -5.26 + (n - 1) * 1.27, 1.5, 0.9)
+    _smd(fp, 29, -0.35, 1.15, 5.0, 5.0, paste_margin=-1.2)
+    _rect(fp, pcbnew.F_Fab, -9.0, -12.75, 9.0, 12.75, 0.1)
+    _line(fp, pcbnew.F_Fab, -9.0, -6.75, 9.0, -6.75, 0.1)          # end of the antenna area
+    # silk: the antenna end and the far end only (the sides are all pads)
+    for y in (-12.87, 12.87):
+        _line(fp, pcbnew.F_SilkS, -9.12, y, 9.12, y, 0.12)
+    for x in (-9.12, 9.12):
+        _line(fp, pcbnew.F_SilkS, x, -12.87, x, -6.3, 0.12)
+        _line(fp, pcbnew.F_SilkS, x, 12.87, x, 12.2, 0.12)
+    _line(fp, pcbnew.F_SilkS, -10.2, -5.26, -9.9, -5.26, 0.3)       # pin 1
+    _rect(fp, pcbnew.F_CrtYd, -9.75, -13.0, 9.75, 13.0, 0.05)
+    fp.Reference().SetPosition(_v(0, -9.0))
+    fp.Value().SetPosition(_v(0, 4.0))
+    return fp
+
+
 def add_model(fp, name):
     m = pcbnew.FP_3DMODEL()
     m.m_Filename = "${KIPRJMOD}/lib/c6er.3dshapes/" + name + ".step"
@@ -271,7 +334,7 @@ def main():
         shutil.rmtree(PRETTY)
     PRETTY.mkdir()
     io = pcbnew.PCB_IO_KICAD_SEXPR()
-    for f in (fp_relay(), fp_zmpt(), fp_db2er(), fp_wj15(), fp_fuse()):
+    for f in (fp_relay(), fp_zmpt(), fp_db2er(), fp_wj15(), fp_fuse(), fp_espc5()):
         add_model(f, f.GetFPID().GetLibItemName().c_str())
         io.FootprintSave(str(PRETTY), f)
     print("wrote", SYM, "and", sorted(os.listdir(PRETTY)))

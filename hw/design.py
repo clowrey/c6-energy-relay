@@ -40,25 +40,32 @@ class Comp:
 
 
 # ---- GPIO ------------------------------------------------------------------------------------
+# ESP32-C5 (DOIT ESPC5-32-H4). Strapping pins (ESP32-C5 datasheet v1.5, ch. 3): GPIO28 boot mode (low = download),
+# GPIO27 must be high for USB download (internal pull-up), GPIO26 only matters when GPIO27 is low, GPIO25 / MTDI
+# (GPIO3) set the SDIO clock edge, GPIO7 the JTAG source, MTMS (GPIO2) is latched too. All are free after reset.
 GPIO = {
-    "USB_DN": 12, "USB_DP": 13,      # native USB Serial/JTAG
-    "UART_TX": 16, "UART_RX": 17,    # to BL0939 RX / from BL0939 TX, 4800 baud
-    "BOOT": 9,                       # BOOT button, usable as a button after boot
-    "RELAY1": 22, "RELAY2": 23,      # relay drivers (not strapping pins)
-    "LED": 2,                        # status LED
-    "I2C_SDA": 6, "I2C_SCL": 7,      # Qwiic / STEMMA QT (ESP32-C6 LP-I2C pins; also on J6)
+    "USB_DN": 13, "USB_DP": 14,      # native USB Serial/JTAG (fixed)
+    "UART_TX": 11, "UART_RX": 12,    # UART0 TXD0 / RXD0 to BL0939 RX / from BL0939 TX, 4800 baud
+    "BOOT": 28,                      # BOOT button (fixed: the boot-mode strapping pin), usable as a button after boot
+    "RELAY1": 23, "RELAY2": 24,      # relay drivers (not strapping pins)
+    "LED": 6,                        # status LED (not strapping, not TXD0)
+    "I2C_SDA": 1, "I2C_SCL": 0,      # Qwiic / STEMMA QT (not strapping)
 }
-ESP_IO_PINS = {  # ESP32-C6-MINI-1 module pin -> GPIO (RXD0 = GPIO17, TXD0 = GPIO16)
-    "5": 2, "6": 3, "9": 4, "10": 5, "12": 0, "13": 1, "15": 6, "16": 7, "17": 12, "18": 13, "19": 14,
-    "20": 15, "22": 8, "23": 9, "24": 18, "25": 19, "26": 20, "27": 21, "28": 22, "29": 23, "30": 17, "31": 16,
+STRAPPING = {2, 3, 7, 25, 26, 27, 28}
+ESP_IO_PINS = {  # ESPC5-32 module pin -> GPIO (DOIT user manual V1.0, table 2.2; RXD0 = GPIO12, TXD0 = GPIO11)
+    "4": 2, "5": 3, "6": 0, "7": 1, "8": 6, "9": 7, "10": 8, "11": 9, "12": 10, "13": 13, "14": 14, "15": 28,
+    "16": 5, "17": 4, "18": 27, "19": 15, "21": 23, "23": 24, "24": 12, "25": 11, "26": 25, "27": 26,
 }
-ESP_GND_PINS = ["1", "2", "11", "14"] + [str(n) for n in range(36, 54)]
+ESP_GND_PINS = ["1", "28", "29"]       # 29 = the ground pad under the module; pins 20 and 22 are not connected
+ESP_GPIO = set(ESP_IO_PINS.values())
 
-# 2 x 9 header (holes only): odd pins in one row, even in the other. Power first, then ground, then the GPIOs,
-# so a sensor's supply, ground and signal wires sit side by side; the GPIOs are ordered so the module's pins
-# fan out to them without crossings. Strapping pins (IO4, IO5, IO8, IO15) are marked on the silkscreen.
-HEADER_PINS = ["+5V", "3V3", "GND", "GND", "IO3", "IO4", "IO5", "IO0", "IO1", "IO6",
-               "IO7", "IO14", "IO15", "IO8", "IO18", "IO19", "IO20", "IO21"]
+# 2 x 8 header (holes only): odd pins in one row, even in the other. Power first, then ground, then every GPIO the
+# board does not use in physical routing order from U1's left and right sides. Strapping pins are marked on silkscreen.
+HEADER_PINS = [
+    "+5V", "3V3", "GND", "GND",
+    "IO2", "IO3", "IO7", "IO8", "IO9", "IO10",
+    "IO5", "IO4", "IO27", "IO15", "IO25", "IO26",
+]
 
 
 def _gpio_net(n: int) -> str:
@@ -68,7 +75,7 @@ def _gpio_net(n: int) -> str:
 
 
 def _esp_pins():
-    pins = {"3": "3V3", "8": "EN"}
+    pins = {"2": "3V3", "3": "EN"}
     for p in ESP_GND_PINS:
         pins[p] = "GND"
     for p, g in ESP_IO_PINS.items():
@@ -99,10 +106,10 @@ COMPONENTS: list[Comp] = [
     C("R29", "r22", {"1": "USB_CDN", "2": "USB_DN"}, block="usb"),
     C("D1", "schottky", {"1": "+5V", "2": "VBUS"}, block="usb"),
     C("R27", "r5k1", {"1": "VBUS", "2": "GND"}, block="usb"),       # bleeds D1's reverse leakage
-    C("U3", "ldo", {"1": "+5V", "3": "+5V", "2": "GND", "5": "3V3"}, block="power"),
+    C("U3", "ldo", {"3": "+5V", "1": "GND", "2": "3V3"}, block="power"),        # AMS1117: 1 GND, 2 + tab out, 3 in
     C("C8", "c100n", {"1": "+5V", "2": "GND"}, block="power"),
-    C("C10", "c10u", {"1": "3V3", "2": "GND"}, block="power"),
-    # ---- ESP32-C6 ------------------------------------------------------------------------------
+    C("C10", "c22u", {"1": "3V3", "2": "GND"}, block="power"),
+    # ---- ESP32-C5 module ------------------------------------------------------------------------------
     C("U1", "esp", _esp_pins(), block="mcu"),
     C("C7", "c100n", {"1": "3V3", "2": "GND"}, block="mcu"),
     C("C11", "c10u", {"1": "3V3", "2": "GND"}, block="mcu"),
@@ -110,12 +117,12 @@ COMPONENTS: list[Comp] = [
     C("C9", "c1u", {"1": "EN", "2": "GND"}, block="mcu"),
     C("SW1", "button", {"1": "EN", "2": "GND"}, value="EN", block="mcu"),
     C("SW2", "button", {"1": "BOOT", "2": "GND"}, value="BOOT", block="mcu"),
-    C("R19", "r10k", {"1": "3V3", "2": "IO8"}, block="mcu"),  # GPIO8 high for serial download
+    C("R19", "r10k", {"1": "3V3", "2": "IO27"}, block="mcu"),  # GPIO27 high for USB download (backs its weak pull-up)
     C("R22", "r470", {"1": "LED", "2": "LED_A"}, block="mcu"),
     C("D4", "led", {"1": "GND", "2": "LED_A"}, block="mcu"),
     C("J6", None, {str(i): n for i, n in enumerate(HEADER_PINS, start=1)}, value="GPIO",
-      symbol="Connector_Generic:Conn_02x09_Odd_Even",
-      footprint="Connector_PinHeader_2.54mm:PinHeader_2x09_P2.54mm_Vertical", dnp=True, block="mcu"),
+      symbol="Connector_Generic:Conn_02x08_Odd_Even",
+      footprint="Connector_PinHeader_2.54mm:PinHeader_2x08_P2.54mm_Vertical", dnp=True, block="mcu"),
     # Qwiic / STEMMA QT (3.3 V I2C, pin 1 GND, 2 3V3, 3 SDA, 4 SCL) with 4.7 kOhm host pull-ups
     C("J7", "qwiic", {"1": "GND", "2": "3V3", "3": _gpio_net(GPIO["I2C_SDA"]),
                       "4": _gpio_net(GPIO["I2C_SCL"]), "MP": "GND"}, block="mcu"),
