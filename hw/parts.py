@@ -46,10 +46,10 @@ _LIST = [
          "Connector_USB:USB_C_Receptacle_HRO_TYPE-C-31-M-12", "USB-C", mpn="TYPE-C-31-M-12"),
     Part("qwiic", "C160404", "Connector_Generic_MountingPin:Conn_01x04_MountingPin",
          "Connector_JST:JST_SH_SM04B-SRSS-TB_1x04-1MP_P1.00mm_Horizontal", "Qwiic",
-         rotation=180, mpn="SM04B-SRSS-TB(LF)(SN)",
+         rotation=0, mpn="SM04B-SRSS-TB(LF)(SN)",        # checked in JLC's preview 2026-11-23
          extra={"pitch": 1.0, "body_mm": (6.0, 4.25, 2.95)}),
     Part("ldo", "C51118", "Regulator_Linear:AP2112K-3.3", "Package_TO_SOT_SMD:SOT-23-5", "AP2112K-3.3",
-         rotation=180, mpn="AP2112K-3.3TRG1",
+         rotation=270, mpn="AP2112K-3.3TRG1",            # checked in JLC's preview 2026-11-23
          extra={"dropout_mv": 250, "dropout_at_ma": 600, "imax_ma": 600}),  # datasheet: 250 mV typ @ 600 mA
     Part("schottky", "C2480", "Device:D_Schottky", "Diode_SMD:D_SMA", "SS14", mpn="SS14"),
     Part("npn", "C20526", "Transistor_BJT:MMBT3904", "Package_TO_SOT_SMD:SOT-23", "MMBT3904",
@@ -92,7 +92,8 @@ _LIST = [
     Part("c22u", "C45783", "Device:C", _C0805, "22uF", per_board=2),
     # solid polymer, 21 mohm: the same maker and kind as the CellKeeper board's bulk capacitor
     Part("c220u", "C46550461", "Device:C_Polarized", "Capacitor_SMD:CP_Elec_6.3x7.7", "220uF 16V polymer",
-         rotation=180, mpn="MA16V220M6X8", extra={"polymer": True, "uf": 220, "volts": 16}),
+         rotation=0, mpn="MA16V220M6X8",                  # checked in JLC's preview 2026-11-23
+         extra={"polymer": True, "uf": 220, "volts": 16}),
     # --- loose (ordered with the boards, not placed) ------------------------------------------
     Part("term508_plug", "C395732", "", "", "DB2EK-5.08-2P plug", per_board=3, mpn="DB2EK-5.08-2P-GN-S",
          extra={"rated_a": 15}),

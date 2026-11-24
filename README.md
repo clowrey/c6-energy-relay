@@ -291,12 +291,14 @@ The order files are in [`hw/out/jlc`](hw/out/jlc):
 3. **Check the placement preview before paying.** Every part should sit on its footprint and point
    the right way. Pay most attention to:
    - the ESP32-C6 module and USB-C;
-   - the Qwiic socket (J7): its opening must face the top board edge. Its rotation in the placement file is
-     unchecked, so turn it in the preview if it faces inward;
+   - the Qwiic socket (J7): its opening must face the top board edge;
    - the BL0939;
    - the LDO (U3);
    - the diodes and transistors, and the polymer capacitor (C14): its + side faces the HLK-PM01;
    - both buttons. A button turned 90° holds EN or BOOT low.
+
+   All 33 parts were checked this way in JLC's preview on 2026-11-23, against the pad positions in the
+   board file. JLC changes its part drawings now and then, so look again before paying.
 4. **Plugs:** add the loose plugs from `plugs.csv` to the same order as parts: 3 × DB2EK-5.08-2P and
    1 × WJ15EDGK-3.81-4P per board.
 
@@ -310,6 +312,12 @@ the fees, PCB and shipping figures are estimates, so check the real quote.
 | 30 | $486 | $16.21 |
 | 50 | $714 | $14.29 |
 | 100 | $1247 | $12.47 |
+
+JLC's own quote on 2026-11-23 for 30 boards (Standard PCBA, top side, HASL with lead) was **$469.65**
+before shipping, duties and the loose plugs: $24.80 for the boards and $444.85 for assembly, of which
+$313.71 is parts. That is about $40 more than the estimate for the same items. JLC adds an X-ray
+inspection ($24.90) for the ESP32 module's hidden pads, and the bare boards cost more than estimated.
+With the plugs (about $26) it comes to about $16.50 a board before shipping.
 
 The most expensive parts per board, at 30 boards:
 
