@@ -330,7 +330,7 @@ t("BOOT", ("U1", "15"), (rx + 1.0, upin(15)[1]), (rx + 1.0, 26.4), (at("SW2")[0]
 t("BOOT", ("SW2", "1", 0), ("SW2", "1", 1))
 t("LED", ("U1", "16"), (rx + 1.6, upin(16)[1]), (rx + 1.6, at("R22")[1]), ("R22", "1"), radii=[None, 0.6, 0.6])
 t("LED_A", ("R22", "2"), ("D4", "2"))
-D4V = (at("D4")[0] + 0.755, at("D4")[1] - 1.15)    # above its pad: the GPIO lanes cross below it
+D4V = (at("D4")[0] + 0.79, at("D4")[1] - 1.15)     # above its pad: the GPIO lanes cross below it
 t("GND", ("D4", "1"), D4V, vias=[D4V])
 SWV = (at("SW2")[0] - 4.2, at("SW2")[1] + 1.875)
 t("GND", ("SW2", "2", 0), SWV, vias=[SWV])
