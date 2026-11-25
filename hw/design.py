@@ -45,11 +45,13 @@ class Comp:
 # (GPIO3) set the SDIO clock edge, GPIO7 the JTAG source, MTMS (GPIO2) is latched too. All are free after reset.
 GPIO = {
     "USB_DN": 13, "USB_DP": 14,      # native USB Serial/JTAG (fixed)
-    "UART_TX": 11, "UART_RX": 12,    # UART0 TXD0 / RXD0 to BL0939 RX / from BL0939 TX, 4800 baud
+    "UART_TX": 1, "UART_RX": 0,      # UART1 to BL0939 RX / from BL0939 TX (pulled up by R17), 4800 baud
     "BOOT": 28,                      # BOOT button (fixed: the boot-mode strapping pin), usable as a button after boot
-    "RELAY1": 23, "RELAY2": 24,      # relay drivers (not strapping pins)
-    "LED": 6,                        # status LED (not strapping, not TXD0)
-    "I2C_SDA": 1, "I2C_SCL": 0,      # Qwiic / STEMMA QT (not strapping)
+    "RELAY1": 6, "RELAY2": 12,       # relay drivers (not strapping pins, not TXD0)
+    "LED": 5,                        # status LED (not strapping, not TXD0)
+    # Qwiic / STEMMA QT on MTMS / MTDI: their 4.7k pull-ups hold both high at reset, the level the chip wants there
+    # (MTMS high = the module's 48 MHz crystal in joint download boot; MTDI only sets the SDIO sampling edge)
+    "I2C_SDA": 2, "I2C_SCL": 3,
 }
 STRAPPING = {2, 3, 7, 25, 26, 27, 28}
 ESP_IO_PINS = {  # ESPC5-32 module pin -> GPIO (DOIT user manual V1.0, table 2.2; RXD0 = GPIO12, TXD0 = GPIO11)
@@ -59,12 +61,13 @@ ESP_IO_PINS = {  # ESPC5-32 module pin -> GPIO (DOIT user manual V1.0, table 2.2
 ESP_GND_PINS = ["1", "28", "29"]       # 29 = the ground pad under the module; pins 20 and 22 are not connected
 ESP_GPIO = set(ESP_IO_PINS.values())
 
-# 2 x 8 header (holes only): odd pins in one row, even in the other. Power first, then ground, then every GPIO the
-# board does not use in physical routing order from U1's left and right sides. Strapping pins are marked on silkscreen.
+# 2 x 8 header (holes only) under the module: odd pins in the lower row, even pins in the upper row, one column per
+# pin pair. Supplies first (3V3 below, 5V above), then GND / GND, then every GPIO the board does not use, in the order
+# their tracks arrive: four from U1's left side, eight from its right side. Strapping pins are marked on silkscreen.
 HEADER_PINS = [
-    "+5V", "3V3", "GND", "GND",
-    "IO2", "IO3", "IO7", "IO8", "IO9", "IO10",
-    "IO5", "IO4", "IO27", "IO15", "IO25", "IO26",
+    "3V3", "+5V", "GND", "GND",
+    "IO7", "IO8", "IO9", "IO10",
+    "IO27", "IO4", "IO23", "IO15", "IO11", "IO24", "IO26", "IO25",
 ]
 
 
@@ -91,8 +94,8 @@ COMPONENTS: list[Comp] = [
     C("F2", "fuse", {"1": "N_IN", "2": "N_F"}, block="mains"),
     C("RV1", "mov", {"1": "L_F", "2": "N_F"}, block="mains"),
     C("PS1", "psu", {"1": "L_F", "2": "N_F", "3": "GND", "4": "+5V"}, block="mains"),
-    C("C12", "c22u", {"1": "+5V", "2": "GND"}, block="power"),
-    C("C13", "c22u", {"1": "+5V", "2": "GND"}, block="power"),
+    C("C12", "c10u", {"1": "+5V", "2": "GND"}, block="power"),
+    C("C13", "c10u", {"1": "+5V", "2": "GND"}, block="power"),
     C("C14", "c220u", {"1": "+5V", "2": "GND"}, block="power"),     # HLK-PM01 sheet: 100-220 uF
     # ---- USB-C, ESD, 5 V OR-ing, 3.3 V LDO -----------------------------------------------------
     C("J5", "usbc", {"A4": "VBUS", "A9": "VBUS", "B4": "VBUS", "B9": "VBUS",
@@ -142,7 +145,7 @@ COMPONENTS: list[Comp] = [
     C("TP3", None, {"1": "I_LEAK"}, value="I_LEAK", symbol="Connector:TestPoint",
       footprint="TestPoint:TestPoint_Pad_D1.0mm", dnp=True, block="meter"),
     # CT inputs: J4 = CT1+, CT1-, CT2+, CT2-; 0.6 ohm burden (2 x 0.3, centre GND) straight across the
-    # terminal, then bead, 1k + 33n. The beads carry only the filter current: a failed bead can't open a CT
+    # terminal, then bead, 1k + 47n. The beads carry only the filter current: a failed bead can't open a CT
     C("J4", "term381_hdr", {"1": "CT1P", "2": "CT1N", "3": "CT2P", "4": "CT2N"}, value="CT1+ CT1- CT2+ CT2-",
       block="meter"),
 ]
@@ -151,19 +154,19 @@ for i, (ct, ip) in enumerate((("CT1P", "IP1"), ("CT1N", "IN1"), ("CT2P", "IP2"),
         C(f"R{8 + i}", "r0r3", {"1": ct, "2": "GND"}, block="meter"),
         C(f"FB{i + 1}", "ferrite", {"1": ct, "2": f"{ct}_B"}, block="meter"),
         C(f"R{12 + i}", "r1k", {"1": f"{ct}_B", "2": ip}, block="meter"),
-        C(f"C{1 + i}", "c33n", {"1": ip, "2": "GND"}, block="meter"),
+        C(f"C{1 + i}", "c47n", {"1": ip, "2": "GND"}, block="meter"),
     ]
 COMPONENTS += [
-    # voltage: ZMPT primary from L_F, then 4 x 51k back to N_F (chain on the N side keeps the layout
-    # free of L/N crossings); 33R secondary load (39 mV rms on VP at 240 V; the BL0939 takes 70)
+    # voltage: ZMPT primary from L_F, then 4 x 100k back to N_F (chain on the N side keeps the layout
+    # free of L/N crossings); 51R secondary load (31 mV rms on VP at 240 V; the BL0939 takes 70)
     C("T1", "zmpt", {"1": "L_F", "2": "ZP1", "3": "VS", "4": "GND"}, block="vsense"),
-    C("R1", "r51k", {"1": "ZP1", "2": "VD1"}, block="vsense"),
-    C("R2", "r51k", {"1": "VD1", "2": "VD2"}, block="vsense"),
-    C("R3", "r51k", {"1": "VD2", "2": "VD3"}, block="vsense"),
-    C("R4", "r51k", {"1": "VD3", "2": "N_F"}, block="vsense"),
-    C("R6", "r33", {"1": "VS", "2": "GND"}, block="vsense"),
+    C("R1", "r100k", {"1": "ZP1", "2": "VD1"}, block="vsense"),
+    C("R2", "r100k", {"1": "VD1", "2": "VD2"}, block="vsense"),
+    C("R3", "r100k", {"1": "VD2", "2": "VD3"}, block="vsense"),
+    C("R4", "r100k", {"1": "VD3", "2": "N_F"}, block="vsense"),
+    C("R6", "r51", {"1": "VS", "2": "GND"}, block="vsense"),
     C("R7", "r1k", {"1": "VS", "2": "VP"}, block="vsense"),
-    C("C5", "c33n", {"1": "VP", "2": "GND"}, block="vsense"),
+    C("C5", "c47n", {"1": "VP", "2": "GND"}, block="vsense"),
 ]
 for k, (q, d, rb, rp) in ((1, ("Q1", "D2", "R23", "R25")), (2, ("Q2", "D3", "R24", "R26"))):
     COMPONENTS += [

@@ -139,7 +139,9 @@ def test_qwiic_port_and_pullups():
     q = design.comp("J7")
     assert q.part == "qwiic" and q.lcsc == "C160404" and not q.dnp
     sda_g, scl_g = design.GPIO["I2C_SDA"], design.GPIO["I2C_SCL"]
-    assert sda_g not in STRAPPING and scl_g not in STRAPPING
+    # a strapping pin only where the chip wants it high at reset, which the 4.7k pull-ups hold it at: MTMS (GPIO2,
+    # 48 MHz crystal in joint download boot) and MTDI (GPIO3, SDIO edge only)
+    assert {sda_g, scl_g} <= (ESP_GPIO - STRAPPING) | {2, 3}
     sda_net, scl_net = f"IO{sda_g}", f"IO{scl_g}"
     assert q.pins == {"1": "GND", "2": "3V3", "3": sda_net, "4": scl_net, "MP": "GND"}
     for net in (sda_net, scl_net):
@@ -148,6 +150,7 @@ def test_qwiic_port_and_pullups():
 
 
 def test_header_power_beside_ground():
-    """The header starts 5V / 3V3, then GND / GND, then GPIOs: a sensor's supply, ground and signal sit side by side."""
-    assert design.HEADER_PINS[:4] == ["+5V", "3V3", "GND", "GND"]
+    """The header starts with the two supplies, then GND / GND, then GPIOs: a sensor's supply, ground and signal sit
+    side by side."""
+    assert sorted(design.HEADER_PINS[:2]) == ["+5V", "3V3"] and design.HEADER_PINS[2:4] == ["GND", "GND"]
     assert all(n.startswith("IO") for n in design.HEADER_PINS[4:])

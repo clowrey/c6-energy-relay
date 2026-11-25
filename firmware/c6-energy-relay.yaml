@@ -1,13 +1,13 @@
 # C6 Energy Relay: starter ESPHome config
 #
-# ESP32-C5 module (DOIT ESPC5-32-H4: 2.4 + 5 GHz Wi-Fi 6). BL0939 on UART0 (GPIO11 TX -> BL0939 RX, GPIO12 RX <-
+# ESP32-C5 module (DOIT ESPC5-32-H4: 2.4 + 5 GHz Wi-Fi 6). BL0939 on a UART (GPIO1 TX -> BL0939 RX, GPIO0 RX <-
 # BL0939 TX, 4800 baud), two relays, status LED, BOOT button (GPIO28), Qwiic I2C. Logs go to the native USB port
-# (USB Serial/JTAG), which leaves UART0 to the BL0939.
+# (USB Serial/JTAG).
 #
 # Starting factors: ESPHome's bl0939 scales for a 1 mOhm shunt (1 mV/A) and a 0.51k / 1.95M divider.
 # This board's CTs (100 A : 50 mA) work into 0.6 ohm, 0.3 mV/A, so current reads x 1/0.3 = 3.33; the
-# ZMPT107 runs from 4 x 51k into 33 ohm, 0.162 mV/V against ESPHome's 0.2615, so voltage reads x 1.62;
-# power and energy x 3.33 x 1.62 = 5.39. Then calibrate once with a known load and a meter: multiply
+# ZMPT107 runs from 4 x 100k into 51 ohm, 0.1275 mV/V against ESPHome's 0.2615, so voltage reads x 2.05;
+# power and energy x 3.33 x 2.05 = 6.84. Then calibrate once with a known load and a meter: multiply
 # each factor by (meter reading / reported value). The energy sensors use the power factors. At 120 V
 # line-neutral the signal is half the 240 V one; the same calibration covers both.
 # Relays always start off after a reboot or power cut (ALWAYS_OFF): a load never comes back on its own.
@@ -18,21 +18,21 @@
 substitutions:
   name: c6-energy-relay
   friendly_name: C6 Energy Relay
-  uart_tx_pin: GPIO11
-  uart_rx_pin: GPIO12
-  relay1_pin: GPIO23
-  relay2_pin: GPIO24
-  led_pin: GPIO6
+  uart_tx_pin: GPIO1
+  uart_rx_pin: GPIO0
+  relay1_pin: GPIO6
+  relay2_pin: GPIO12
+  led_pin: GPIO5
   boot_pin: GPIO28
-  i2c_sda_pin: GPIO1
-  i2c_scl_pin: GPIO0
+  i2c_sda_pin: GPIO2
+  i2c_scl_pin: GPIO3
   coil_hold: "60%"
   coil_pull_in: 300ms
-  voltage_cal: "1.62"
+  voltage_cal: "2.05"
   current1_cal: "3.33"
   current2_cal: "3.33"
-  power1_cal: "5.39"
-  power2_cal: "5.39"
+  power1_cal: "6.84"
+  power2_cal: "6.84"
 
 esphome:
   name: ${name}

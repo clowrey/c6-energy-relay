@@ -43,9 +43,10 @@ def test_openings_cut(parts):
         x0, y0, z0, x1, y1, z1 = c["plug_envelope"]
         wy = wall_y_bottom if c["edge"] == "bottom" else h + case.GAP + case.WALL / 2
         assert not cover.is_inside(Vector((x0 + x1) / 2, wy, (z0 + z1) / 2)), c["ref"]
-    hot = FEATURES["hot_parts"][0]
-    assert not cover.is_inside(Vector(hot[0] + 3.8, h + case.GAP + case.WALL / 2, 10))      # top vent
-    assert not cover.is_inside(Vector(w + case.GAP + case.WALL / 2, 31.8, 10))              # side vent
+    for vx in case.top_vents(FEATURES):
+        assert not cover.is_inside(Vector(vx + case.VENT_W / 2, h + case.GAP + case.WALL / 2, 10)), vx
+    for vy in case.side_vents():
+        assert not cover.is_inside(Vector(w + case.GAP + case.WALL / 2, vy + case.VENT_W / 2, 10)), vy
     lx, ly = FEATURES["led"]
     assert not cover.is_inside(Vector(lx, ly, case.Z_FRONT_OUT - case.LED_WINDOW - 0.2))
     assert cover.is_inside(Vector(lx, ly, case.Z_FRONT_OUT - case.LED_WINDOW / 2))
@@ -165,7 +166,7 @@ def test_din_clip_strong(parts):
 
 def test_din_latch_moves(parts):
     """The latch block must move down by the lip's reach (plus margin) to clear the flange. It rides on
-    spring beams that bend in the clip plate's own plane (their 1.6 mm side, not the plate thickness),
+    spring beams that bend in the clip plate's own plane (their 1.2 mm side, not the plate thickness),
     so the bending strain is a guided beam's 3 d h / L^2: kept well under PETG's ~3 % yield. And the
     room is really there: the slot below the moving part is clear for the whole travel."""
     clip = parts[2]
@@ -175,7 +176,7 @@ def test_din_latch_moves(parts):
     beam_len = (case.BEAM_X1 - case.BEAM_X0 - case.LATCH_W) / 2
     assert 3 * case.LATCH_TRAVEL * case.BEAM_H / beam_len ** 2 <= 0.015
     zm = (case.Z_CLIP_OUT + case.Z_BACK_OUT) / 2
-    cx = w / 2
+    cx = g["cx"]
     # free slot under the shuttle and beside its tab for the full travel (+ 0.2)
     for px in (g["lx0"] + 0.5, cx - case.TAB_W / 2 - 0.4, g["lx1"] - 0.5):
         assert not clip.is_inside(Vector(px, g["s_lo"] - case.LATCH_TRAVEL - 0.2, zm)), px
@@ -230,7 +231,7 @@ def test_pull_tab_strong(parts):
     least 2.2 mm of solid plastic around the screwdriver slot on every side."""
     clip = parts[2]
     w, _ = FEATURES["outline_mm"]
-    cx = w / 2
+    cx = case.latch_geometry(w)["cx"]
     sx, sy = case.PRY_SLOT
     assert case.TAB_W >= 10.0
     assert case.TAB_OUT >= 4.5
@@ -259,7 +260,7 @@ def test_base_relief_pocket(parts):
     base = parts[0]
     w, _ = FEATURES["outline_mm"]
     g = case.latch_geometry(w)
-    cx = w / 2
+    cx = g["cx"]
     assert case.BASE_RELIEF >= 0.4
     assert case.RELIEF_MARGIN >= 1.5
     z_clear = case.Z_BACK_OUT + 0.2
@@ -288,7 +289,7 @@ def test_z_retention(parts):
     clip = parts[2]
     w, _ = FEATURES["outline_mm"]
     g = case.latch_geometry(w)
-    cx = w / 2
+    cx = g["cx"]
     assert case.STRAP_GAP >= 0.4
     assert case.STRAP_GAP + case.STRAP_T <= 1.6 + 1e-6
     assert case.STRAP_W <= 10.0
@@ -325,19 +326,29 @@ def test_flange_gap(parts):
 
 
 def test_pillars_fused_to_near_walls(parts):
-    """H3's pillar is too close to the bottom wall (0.3 mm) to print as a gap: it is fused to the wall above
-    the board and open below it, so the board drops in. H2's stays open: side vents are behind it."""
+    """A pillar closer to a wall than PILLAR_WALL_FUSE (a gap too thin to print) is fused to it above the board and
+    open below it, so the board drops in; the others keep their gap. Every vent reaches the inside."""
     _, cover, _ = parts
-    w, _ = FEATURES["outline_mm"]
-    for z in (case.Z_BOARD_TOP + 0.4, 10.0, case.Z_FRONT_IN - 0.5):
-        assert cover.is_inside(Vector(21.0, -0.65, z)), z
-    for z in (0.0, case.Z_BOARD_TOP - 0.4):
-        assert not cover.is_inside(Vector(21.0, -0.65, z)), z
-    assert not cover.is_inside(Vector(w + case.GAP - 0.4, 43.0, 5.0))
-    for i in range(5):                                # every side vent reaches the inside, past H2's pillar
-        vy = 31.0 + i * 3.2 + 0.8
+    w, h = FEATURES["outline_mm"]
+    r, lim = case.PILLAR_D / 2, case.PILLAR_WALL_FUSE
+    fused = 0
+    for x, y, _ in FEATURES["holes"]:
+        for gap, probe in (((x - r) + case.GAP, (x - r - 0.25, y)), ((w + case.GAP) - (x + r), (x + r + 0.25, y)),
+                           ((y - r) + case.GAP, (x, y - r - 0.25)), ((h + case.GAP) - (y + r), (x, y + r + 0.25))):
+            if gap > 2.0:
+                continue
+            if gap < lim:
+                fused += 1
+                for z in (case.Z_BOARD_TOP + 0.4, 10.0, case.Z_FRONT_IN - 0.5):
+                    assert cover.is_inside(Vector(*probe, z)), ((x, y), z)
+                for z in (0.0, case.Z_BOARD_TOP - 0.4):
+                    assert not cover.is_inside(Vector(*probe, z)), ((x, y), z)
+            else:
+                assert not cover.is_inside(Vector(*probe, 10.0)), (x, y)
+    assert fused == 1                                 # H4, at the right wall
+    for vy in case.side_vents():
         for x in (w + case.GAP - 0.4, w + case.GAP + case.WALL / 2):
-            assert not cover.is_inside(Vector(x, vy, 10.0)), (x, vy)
+            assert not cover.is_inside(Vector(x, vy + case.VENT_W / 2, 10.0)), (x, vy)
 
 
 def test_no_gap_below_the_board(parts):
@@ -357,8 +368,8 @@ def test_no_gap_below_the_board(parts):
 
 
 def test_led_light_tube(parts):
-    """Hollow 5.0 mm ID, 1.2 mm wall LED light tube runs from Z_FRONT_IN down to z = 5.0, fused to
-    the top wall, open down its bore, clear below z = 5.0, and closed by the 0.6 mm front window."""
+    """Hollow 5.0 mm ID, 1.2 mm wall LED light tube runs from Z_FRONT_IN down to z = 5.0, open down its
+    bore, clear below z = 5.0, and closed by the 0.6 mm front window."""
     _, cover, _ = parts
     _, h = FEATURES["outline_mm"]
     lx, ly = FEATURES["led"]
@@ -377,10 +388,8 @@ def test_led_light_tube(parts):
             assert cover.is_inside(Vector(lx + dx, ly + dy, z)), (dx, dy, z)
         # clear outside the tube on the board-facing side
         assert not cover.is_inside(Vector(lx, ly - r_out - 0.5, z)), z
-    # clear below z = 5.0 above the LED, fused to the top wall, and 0.6 mm front window intact
+    # clear below z = 5.0 above the LED, and 0.6 mm front window intact
     assert not cover.is_inside(Vector(lx, ly - r_mid, case.LED_TUBE_Z0 - 0.5))
-    assert cover.is_inside(Vector(lx, h + case.GAP - 0.1, 13.0))
-    assert cover.is_inside(Vector(lx, h + case.GAP + 0.1, 13.0))
     assert not cover.is_inside(Vector(lx, ly, case.Z_FRONT_OUT - case.LED_WINDOW - 0.2))
     assert cover.is_inside(Vector(lx, ly, case.Z_FRONT_OUT - case.LED_WINDOW / 2))
 

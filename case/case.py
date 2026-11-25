@@ -4,9 +4,9 @@
 
 Three parts:
   cover  the front shell: closed front face, four walls, a pillar at each of the board's mounting
-         holes (H3's is fused to the bottom wall above the board: the gap is too thin to print), and a hollow light tube
-         behind the 0.6 mm LED window. Wall openings: the plug row along the bottom edge, USB-C in
-         the top edge, vents.
+         holes (H4's is fused to the right wall above the board: the gap is too thin to print), and a hollow light
+         tube behind the 0.6 mm LED window. Wall openings: the plug row along the bottom edge, USB-C and Qwiic in
+         the top edge, vents (top edge beside the USB-C, right edge above the relays).
   base   the sealed back plate: no openings except the four screw holes, so nothing (a screwdriver, the
          metal DIN rail) can reach the mains parts behind the board. A standoff rises to each mounting
          hole, a 1.4 mm rim locates the plate inside the cover's walls, and a 0.4 mm chamfered relief
@@ -14,8 +14,9 @@ Three parts:
          1.8 mm of solid plastic.
   clip   the DIN-rail clip, screwed under the base: a fixed hook at the top (65 mm long, 3.5 mm wall,
          2 mm lip over the flange, five ribs behind it) and a sprung latch at the bottom. The latch
-         block rides on four 1.6 mm spring beams cut in the clip plate, which bend in the plate's own
-         plane, and has 3.2 mm of free travel. Two bridged straps on the outer face retain the pull
+         block rides on four 1.2 mm spring beams cut in the clip plate, which bend in the plate's own
+         plane, and has 3.2 mm of free travel. The beams are anchored clear of every screw that falls in
+         their band (H2), so the latch sits a little right of centre. Two bridged straps on the outer face retain the pull
          tab in -z without supports. To take the case off the rail, pull the tab at the clip's bottom
          edge down (a screwdriver in its slot levers it).
 Four screws hold everything: M3 x 16 countersunk, from the back through the clip, the base, its
@@ -64,8 +65,7 @@ M3_CLEAR_D = 3.4
 CSK_D = 6.6                   # 90 degree countersink at the clip's back face (M3 flat head: 5.5-6.0 mm)
 SCREW_LEN = 16.0              # M3 x 16 countersunk, overall length
 PILLAR_D = 6.0
-PILLAR_WALL_FUSE = 0.5        # fuse a cover pillar this close to a wall: the gap wouldn't print (H2's 0.8 mm stays
-                              # open, it is the way out for the side vents behind it)
+PILLAR_WALL_FUSE = 0.6        # fuse a cover pillar this close to a wall: the gap wouldn't print (H4's 0.5 mm)
 STANDOFF_D = 6.0
 LED_WINDOW = 0.6
 LED_WINDOW_D = 3.5            # thinned window diameter in the front face
@@ -97,9 +97,13 @@ GUSSET_T, GUSSET_L = 2.0, 4.0
 LATCH_W = 20.0                # latch block width along the rail
 LATCH_TRAVEL = LIP_W + 0.4    # the block moves this far down to clear the flange
 SHUTTLE_D = 4.4               # depth (y) of the clip plate under the latch block that moves with it
-BEAM_H = 1.6                  # spring beam depth in the bending direction (y)
+BEAM_H = 1.2                  # spring beam depth in the bending direction (y)
 BEAM_GAP = 1.2                # slot between the two beams on each side
-BEAM_X0, BEAM_X1 = 1.0, 79.0  # beam anchors (x); each beam is (span - LATCH_W) / 2 = 29 mm long
+BEAM_X0, BEAM_X1 = 1.0, 79.0  # beam anchors (x), set by build_case() clear of the screws; each beam is
+                              # (span - LATCH_W) / 2 long
+BEAM_SCREW_GAP = 1.0          # plate left between a screw's countersink and a beam anchor
+SIDE_VENTS_Y0 = 44.6          # right-wall vents: above the relays (no mains behind them) and H4's fused pillar
+VENT_W, VENT_PITCH, VENT_N = 1.6, 3.0, 6
 SLOT_PLAY = 0.8               # free gap beyond the travel, and above the shuttle
 TAB_W = 10.0                  # pull tab: from the shuttle down past the clip's bottom edge
 TAB_OUT = 5.5                 # how far the tab sticks out below the case
@@ -190,6 +194,22 @@ def label_solids(f):
             for s, x, y, size, _ in lid_labels(f)]
 
 
+def top_vents(f):
+    """-> x of the top-wall vent slots: VENT_N slots nearest the hot parts' middle that keep 1.5 mm off every
+    connector opening in that wall."""
+    w, _ = f["outline_mm"]
+    blocked = [(c["plug_envelope"][0] - 2.5, c["plug_envelope"][3] + 2.5) for c in f["connectors"] if c["edge"] == "top"]
+    hot = f["hot_parts"][0]
+    mid = hot[0] + hot[2] / 2
+    free = [x for x in (2.0 + VENT_PITCH * i for i in range(int(w / VENT_PITCH)))
+            if x + VENT_W < w - 2.0 and not any(a < x + VENT_W and x < b for a, b in blocked)]
+    return sorted(sorted(free, key=lambda x: abs(x + VENT_W / 2 - mid))[:VENT_N])
+
+
+def side_vents():
+    return [SIDE_VENTS_Y0 + i * 3.2 for i in range(5)]
+
+
 def build_cover(f):
     w, h = f["outline_mm"]
     x0, x1, y0, y1 = -GAP - WALL, w + GAP + WALL, -GAP - WALL, h + GAP + WALL
@@ -226,14 +246,11 @@ def build_cover(f):
             cover -= box(ex0 - 1.0, ex1 + 1.0, y0 - 1, -GAP + 0.5, max(ez0 - 1.0, Z_BACK_IN - 1), ez1 + 1.0)
         else:
             cover -= box(ex0 - 1.0, ex1 + 1.0, h + GAP - 0.5, y1 + 1, ez0 - 1.0, ez1 + 1.0)
-    # vents: top edge over the HLK, right edge beside the relays
-    hot = f["hot_parts"][0]                          # PS1: x, y, w, h
-    for i in range(6):
-        vx = hot[0] + 3.0 + i * 3.0
-        cover -= box(vx, vx + 1.6, h + GAP - 0.5, y1 + 1, 5.0, Z_FRONT_IN - 3.0)
-    for i in range(5):                               # above relay 2's contacts, not beside them
-        vy = 31.0 + i * 3.2
-        cover -= box(w + GAP - 0.5, x1 + 1, vy, vy + 1.6, 4.0, Z_FRONT_IN - 3.0)
+    # vents: top edge beside the USB-C (over the LDO and the HLK's end), right edge above the relays
+    for vx in top_vents(f):
+        cover -= box(vx, vx + VENT_W, h + GAP - 0.5, y1 + 1, 5.0, Z_FRONT_IN - 3.0)
+    for vy in side_vents():                          # above relay 2's contacts, not beside them
+        cover -= box(w + GAP - 0.5, x1 + 1, vy, vy + VENT_W, 4.0, Z_FRONT_IN - 3.0)
     # LED tube bore and 0.6 mm thinned window in the front face
     cover -= cyl(lx, ly, LED_TUBE_ID, LED_TUBE_Z0 - 0.5, Z_FRONT_IN)
     cover -= cyl(lx, ly, LED_WINDOW_D, Z_FRONT_IN - 0.1, Z_FRONT_OUT - LED_WINDOW)
@@ -263,7 +280,7 @@ def build_base(f):
     # 0.4 mm back-face relief pocket over the swept area of the clip's moving parts + margin;
     # T-shaped with 45-degree chamfered walls so the base prints flat on its back face with short bridges
     g = latch_geometry(w)
-    cx = w / 2
+    cx = g["cx"]
     z_rel = Z_BACK_OUT + BASE_RELIEF
     base -= chamfer_pocket(
         BEAM_X0 - RELIEF_MARGIN, BEAM_X1 + RELIEF_MARGIN,
@@ -279,13 +296,15 @@ def build_base(f):
 
 
 def latch_geometry(w):
-    """-> dict of the latch's y levels and x extents (case coordinates)."""
+    """-> dict of the latch's y levels and x extents (case coordinates). The latch sits midway between the
+    beam anchors."""
+    cx = (BEAM_X0 + BEAM_X1) / 2
     lt = RAIL_Y - RAIL_SPAN / 2                       # latch catching face
     s_hi = lt                                         # shuttle (the plate under the block) top ...
     s_lo = lt - SHUTTLE_D                             # ... and bottom
     return {"lt": lt, "s_hi": s_hi, "s_lo": s_lo,
             "cut_lo": s_lo - LATCH_TRAVEL - SLOT_PLAY, "cut_hi": s_hi + SLOT_PLAY,
-            "lx0": w / 2 - LATCH_W / 2, "lx1": w / 2 + LATCH_W / 2}
+            "cx": cx, "lx0": cx - LATCH_W / 2, "lx1": cx + LATCH_W / 2}
 
 
 def build_clip(f):
@@ -311,7 +330,7 @@ def build_clip(f):
 
     # latch: cut a band through the plate, then put back the shuttle, the four beams and the pull tab
     g = latch_geometry(w)
-    cx = w / 2
+    cx = g["cx"]
     ch_x0, ch_x1 = cx - TAB_W / 2 - SLOT_PLAY, cx + TAB_W / 2 + SLOT_PLAY
     clip -= box(BEAM_X0, BEAM_X1, g["cut_lo"], g["cut_hi"], Z_CLIP_OUT - 1, Z_BACK_OUT + 1)
     clip -= box(ch_x0, ch_x1, y0 - 1, g["cut_lo"] + 0.1,
@@ -350,7 +369,7 @@ def build_clip(f):
         clip -= Pos(x, y, Z_CLIP_OUT) * Cone(CSK_D / 2, M3_CLEAR_D / 2, (CSK_D - M3_CLEAR_D) / 2,
                                              align=(Align.CENTER, Align.CENTER, Align.MIN))
         clip -= cyl(x, y, CSK_D + 0.4, z_tip - 1, Z_CLIP_OUT)
-    RAIL_PROBE_X = w / 2
+    RAIL_PROBE_X = cx
     return one_solid(clip)
 
 
@@ -359,10 +378,19 @@ def build_case(features: dict):
     global HOOK_GUSSETS, BEAM_X0, BEAM_X1, RAIL_Y, Z_FRONT_IN, Z_FRONT_OUT
     w, h = features["outline_mm"]
     HOOK_GUSSETS = tuple(w / 2 + d for d in (-30.0, -15.0, 0.0, 15.0, 30.0))
-    BEAM_X0, BEAM_X1 = 1.0, w - 1.0
     Z_FRONT_IN = Z_BOARD_TOP + features["max_component_height"] + FRONT_CLEAR
     Z_FRONT_OUT = Z_FRONT_IN + WALL
     RAIL_Y = h / 2
+    # spring beams: anchored at the board's edges, or clear of any screw whose countersink falls in the band the
+    # latch is cut in
+    BEAM_X0, BEAM_X1 = 0.0, w
+    g = latch_geometry(w)
+    for x, y, _ in features["holes"]:
+        if g["cut_lo"] - CSK_D / 2 < y < g["cut_hi"] + CSK_D / 2:
+            if x < w / 2:
+                BEAM_X0 = max(BEAM_X0, x + CSK_D / 2 + BEAM_SCREW_GAP)
+            else:
+                BEAM_X1 = min(BEAM_X1, x - CSK_D / 2 - BEAM_SCREW_GAP)
     return build_base(features), build_cover(features), build_clip(features)
 
 

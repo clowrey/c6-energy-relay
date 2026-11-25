@@ -81,18 +81,18 @@ _LIST = [
     Part("r4k7", "C23162", "Device:R", _R0603, "4.7k", per_board=2),
     Part("r5k1", "C23186", "Device:R", _R0603, "5.1k", per_board=3),
     Part("r22", "C23345", "Device:R", _R0603, "22R 1%", per_board=2),
-    Part("r33", "C23140", "Device:R", _R0603, "33R 1%"),
-    # 200 V, 250 mW each; 4 x 51k = 204k feeds the ZMPT107 1.2 mA at 240 V and turns 0.28 W into heat there
-    # (4 x 27k made 0.53 W)
-    Part("r51k", "C17992", "Device:R", "Resistor_SMD:R_1206_3216Metric", "51k 1206", per_board=4,
-         mpn="1206W4F5102T5E", extra={"volts": 200, "mw": 250}),
+    Part("r51", "C23197", "Device:R", _R0603, "51R 1%", mpn="0603WAF510JT5E"),   # ZMPT107 secondary load
+    # JLC Basic, 200 V, 250 mW each; 4 x 100k = 400k feeds the ZMPT107 0.6 mA at 240 V and turns 0.14 W into heat
+    # there (4 x 51k, Extended, made 0.28 W)
+    Part("r100k", "C17900", "Device:R", "Resistor_SMD:R_1206_3216Metric", "100k 1206", per_board=4,
+         mpn="1206W4F1003T5E", extra={"volts": 200, "mw": 250}),
     Part("r0r3", "C59882", "Device:R", "Resistor_SMD:R_1206_3216Metric", "0.3R 1%", per_board=4),
     # --- capacitors ---------------------------------------------------------------------------
-    Part("c33n", "C21117", "Device:C", _C0603, "33nF", per_board=5),
+    Part("c47n", "C1622", "Device:C", _C0603, "47nF", per_board=5, mpn="CL10B473KB8NNNC"),   # 1k + 47n: 3.4 kHz
     Part("c100n", "C14663", "Device:C", _C0603, "100nF", per_board=3),
     Part("c1u", "C15849", "Device:C", _C0603, "1uF", per_board=1),
-    Part("c10u", "C15850", "Device:C", _C0805, "10uF", per_board=1),
-    Part("c22u", "C45783", "Device:C", _C0805, "22uF", per_board=3),   # C10: AMS1117 output, which asks for 22 uF
+    Part("c10u", "C15850", "Device:C", _C0805, "10uF", per_board=3),   # C11 at U1; C12, C13 on +5V (C14 is the bulk)
+    Part("c22u", "C45783", "Device:C", _C0805, "22uF", per_board=1),   # C10: AMS1117 output, which asks for 22 uF
     # solid polymer, 21 mohm: the same maker and kind as the CellKeeper board's bulk capacitor
     Part("c220u", "C46550461", "Device:C_Polarized", "Capacitor_SMD:CP_Elec_6.3x7.7", "220uF 16V polymer",
          rotation=0, mpn="MA16V220M6X8",                  # checked in JLC's preview 2026-11-23

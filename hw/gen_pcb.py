@@ -7,14 +7,15 @@ then hw/route.py adds the tracks and fills the zones.
 Coordinates in this file: mm, origin at the board's top-left corner, y down (KiCad's sense); the board
 sits at (OX, OY) on the KiCad page. board_features.json uses origin lower-left, y up (for the case).
 
-Floor plan (board 90 x 86, mounted upright: bottom edge = terminals, top edge = Qwiic, USB-C, antenna):
-  bottom-left   CT terminal J4, burdens, BL0939 filters above it, ZMPT secondary
-  bottom-middle input J1 between its two SMD fuses F1 (L) / F2 (N); MOV and the ZMPT divider
-                between the fuses; HLK-PM01 standing above with its AC pins at the bottom
-  bottom-right  relays K1, K2 (coil up, contacts down) over their terminals J2, J3
-  top-left      Qwiic J7 (far from the Wi-Fi antenna) and status LED D4
-  top-middle    USB-C J5, power OR-ing D1, 220 uF bulk C14, AMS1117-3.3 LDO U3 with 3V3 heat spreader
-  top-right     ESP32-C5 module U1 (antenna at top edge), buttons SW1/SW2, GPIO header J6, relay drivers
+Floor plan (board 74.5 x 78, mounted upright: bottom edge = terminals, top edge = Qwiic, USB-C, antenna):
+  left column   CT terminal J4 and burdens at the bottom, the ZMPT107 T1 above them (secondary on the left), then
+                the bead row, the BL0939 U2 with its RC filters on the far left, Qwiic J7 at the top-left corner
+  middle        mains input J1 between its fuses F1 / F2, the divider between the fuses, the MOV above them and the
+                HLK-PM01 PS1 standing on top: L_F runs straight up the fuse, MOV and supply pins. Above PS1 the
+                top band: USB-C J5, OR-ing diode D1, AMS1117 U3 and the module's decoupling, in a row
+  right         ESP32-C5 module U1 at the top-right corner, its antenna over a cut-out in the board; EN button
+                beside its left pins, BOOT button and LED under it, the 2 x 8 GPIO header J6 centred under it, the
+                relay drivers on either side below the header, relays K1 / K2 over their terminals J2 / J3
 """
 from __future__ import annotations
 
@@ -36,9 +37,11 @@ DRU = HERE / "c6-energy-relay.kicad_dru"
 FEATURES = HERE / "out" / "board_features.json"
 KICAD_FP = Path(r"C:\Program Files\KiCad\10.0\share\kicad\footprints")
 
-W, H = 90.0, 86.0
+W, H = 76.4, 80.0
 OX, OY = 100.0, 50.0
-CORNER_R = 2.0
+CORNER_R = 3.0
+# the antenna cut-out: the module's antenna end hangs over air in the top-right corner of the board
+NOTCH_Y, NOTCH_R = 6.3, 1.0                     # its depth and inner corner radius
 
 # The plug headers along the bottom edge stick out TERM_OUT past it, so their mouths sit flush with the outside of
 # the case wall (0.8 mm gap + 2.2 mm wall) and a plug finds them easily. USB-C sticks out USB_OUT: as far as its
@@ -46,68 +49,70 @@ CORNER_R = 2.0
 TERM_OUT = 3.0
 USB_OUT = 1.25
 TERM_Y = H - 10.0 + TERM_OUT   # pin row of the 5.08 mm headers
-DH = H - 80.0                  # vertical shift applied to the bottom mains/metering section
-K1_X, K2_X = 56.5, 76.5        # relay centres across the 90 mm width
+K1_X, K2_X = 50.3, 68.7        # relay centres: 18.4 apart (contact copper 4 mm apart, room for a screw between)
+K_Y = H - 19.5                 # relay centre row: the relay body ends just above its terminal
+UX, UY = (K1_X + K2_X) / 2, 12.75   # module centre: antenna end on the top edge, centred over the relay pair
+NOTCH_X = UX - 9.6                  # the cut-out's left edge, just outside the module body
+HX, HY = UX - 3.5 * 2.54, 41.84     # GPIO header: pin 1 and the lower (odd) row
+U2X, U2Y = 11.9, 36.0               # BL0939
+JX = 21.5                          # USB-C centre
+FX1, FX2, F_Y = 23.8, 37.6, H - 16.0     # fuses
+PX, PY = 23.8, H - 32.6             # HLK-PM01 L pin (its N pin is 5 mm right); L_F runs straight up x = PX
 
 # ref: (x, y, rotation) in board coordinates (y down)
 PLACE = {
-    # ---- mains ---------------------------------------------------------------------------------
-    "J1": (30.0, TERM_Y, 0), "F1": (23.0, 62.2 + DH, 90), "F2": (41.2, 62.2 + DH, 90),
-    "RV1": (28.5, 55.5 + DH, 0), "PS1": (30.0, 49.0 + DH, 90),
-    "T1": (10.5, 54.0 + DH, 180),
-    # divider zigzag at 3.3 mm pitch between the fuses: pads of nodes two resistors apart (~120 V) keep
-    # 1.5 mm; R4's N end sits right under RV1's N pad
-    "R1": (27.0, 63.0 + DH, 270), "R2": (30.3, 63.0 + DH, 90),
-    "R3": (33.6, 63.0 + DH, 270), "R4": (36.9, 63.0 + DH, 90),
-    "K1": (K1_X, 57.5 + DH, 90), "J2": (K1_X - 2.54, TERM_Y, 0),
-    "K2": (K2_X, 57.5 + DH, 90), "J3": (K2_X - 2.54, TERM_Y, 0),
+    # ---- mains: input, fuses, divider, MOV, supply -----------------------------------------------
+    "J1": (28.4, TERM_Y, 0), "F1": (FX1, F_Y, 90), "F2": (FX2, F_Y, 90),
+    # divider between the fuses, two columns 5.8 mm apart: ZP1 (at L) enters top-left, N_F leaves top-right under the
+    # MOV's N pin, 4 mm away
+    "R1": (27.8, F_Y - 4.0, 270), "R2": (27.8, F_Y + 1.0, 270),
+    "R3": (33.6, F_Y + 1.0, 90), "R4": (33.6, F_Y - 4.0, 90),
+    "RV1": (PX + 2.2, PY + 5.3, 0), "PS1": (PX, PY, 90),
+    "T1": (10.5, H - 23.1, 180),
+    "K1": (K1_X, K_Y, 90), "J2": (K1_X - 2.54, TERM_Y, 0),
+    "K2": (K2_X, K_Y, 90), "J3": (K2_X - 2.54, TERM_Y, 0),
     # ---- CT input and metering -----------------------------------------------------------------
     "J4": (3.2, H - 6.05 + TERM_OUT, 0),
-    # beads beside their burden columns, after the burden node (the CT loop is terminal -> burden only)
-    "FB1": (1.2, 70.6 + DH, 90), "FB2": (5.01, 70.6 + DH, 90),
-    "FB3": (8.82, 70.6 + DH, 90), "FB4": (12.38, 70.6 + DH, 90),
-    "R8": (3.2, 66.6 + DH, 90), "R9": (7.01, 66.6 + DH, 90),
-    "R10": (10.82, 66.6 + DH, 90), "R11": (13.93, 66.6 + DH, 90),  # R11 0.7 in: 6.5 mm to F1
-    "U2": (14.5, 34.0 + DH, 0),
-    # RC filters: one row per input, R (CT side left) then C to GND, rows 3.2 apart
-    "R12": (5.6, 29.375 + DH, 0), "R13": (5.6, 31.025 + DH, 0),
-    "R14": (5.6, 35.775 + DH, 0), "R15": (5.6, 37.425 + DH, 0),
-    "R7": (5.6, 42.175 + DH, 0),
-    "C1": (8.4, 28.6 + DH, 90), "C2": (8.4, 31.8 + DH, 270),
-    "C3": (8.4, 35.0 + DH, 90), "C4": (8.4, 38.2 + DH, 270),
-    "C5": (8.4, 41.4 + DH, 90),
-    "R6": (5.6, 44.5 + DH, 0),
-    "C6": (12.8, 27.0 + DH, 0), "R16": (20.1, 34.635 + DH, 270), "R17": (20.1, 29.5 + DH, 270),
-    "TP1": (19.5, 40.8 + DH, 0), "TP2": (14.5, 40.8 + DH, 0), "TP3": (17.0, 40.8 + DH, 0),
-    # ---- top-left: Qwiic (far from antenna) and status LED -------------------------------------
-    "J7": (9.5, 3.3, 180), "R31": (7.2, 9.2, 90), "R30": (9.0, 9.2, 90),
-    "D4": (20.5, 2.2, 0), "R22": (20.5, 5.0, 0),
-    # ---- USB-C and power (clustered beside PS1 +5V and U1 3V3) ---------------------------------
-    "J5": (50.5, 3.7 - USB_OUT, 180),
-    "R28": (49.5, 11.4, 270), "R29": (51.5, 11.4, 270),
-    "R20": (57.8, 5.6, 0), "R21": (44.8, 11.4, 270),
-    "D1": (39.5, 8.6, 0), "R27": (41.8, 12.6, 270),
-    "C14": (32.5, 15.6, 90),
-    "U3": (47.8, 18.8, 0), "C8": (41.2, 20.4, 90), "C12": (45.0, 25.4, 270), "C10": (54.0, 23.0, 270),
-    "C13": (66.5, 54.0, 90),
-    # ---- MCU: ESP32-C5 upright with antenna at the top edge ------------------------------------
-    "U1": (72.5, 13.2, 0),
-    "C7": (60.6, 8.6, 90), "C11": (58.2, 8.6, 90),
-    "R18": (55.4, 10.8, 0), "C9": (55.4, 12.6, 180),
-    "SW1": (51.2, 30.8, 0), "SW2": (72.5, 29.5, 0),
-    "R19": (46.8, 36.6, 270),
-    "J6": (52.0, 41.2, 90),
-    # ---- relay drivers -------------------------------------------------------------------------
-    "Q1": (K1_X, 42.8 + DH, 0), "D2": (K1_X, 46.2 + DH, 0),
-    "R23": (K1_X - 4.0, 41.85 + DH, 0), "R25": (K1_X - 4.0, 43.75 + DH, 180),
-    "Q2": (K2_X, 42.8 + DH, 0), "D3": (K2_X, 46.2 + DH, 0),
-    "R24": (K2_X - 4.0, 41.85 + DH, 0), "R26": (K2_X - 4.0, 43.75 + DH, 180),
+    "R8": (3.2, H - 7.9, 90), "R9": (7.01, H - 7.9, 90), "R10": (10.82, H - 7.9, 90), "R11": (14.63, H - 7.9, 90),
+    # beads in a row above T1, in CT order; the filtered lines then run up the left edge to their RC rows
+    "R6": (3.0, H - 30.4, 90),   # the ZMPT107 load, right at its secondary
+    "FB1": (5.4, H - 30.5, 90), "FB2": (7.2, H - 30.5, 90), "FB3": (9.0, H - 30.5, 90), "FB4": (10.8, H - 30.5, 90),
+    "U2": (U2X, U2Y, 0),
+    # RC filters: one row per input, R (CT side left) then C to GND
+    "R12": (3.75, U2Y - 4.625, 0), "R13": (3.75, U2Y - 2.975, 0),
+    "R14": (3.75, U2Y + 1.775, 0), "R15": (3.75, U2Y + 3.425, 0), "R7": (3.75, U2Y + 8.175, 0),
+    "C1": (6.1, U2Y - 5.4, 90), "C2": (6.1, U2Y - 2.2, 270),
+    "C3": (6.1, U2Y + 1.0, 90), "C4": (6.1, U2Y + 4.2, 270), "C5": (6.1, U2Y + 7.4, 90),
+    "C6": (U2X - 1.3, U2Y - 6.6, 0), "R17": (U2X - 0.3, U2Y - 8.5, 0),
+    # SEL pull-down and the CF / I_LEAK / ZX test pads in a row under the chip, fed from under its body
+    "R16": (U2X - 3.0, U2Y + 7.9, 270),
+    "TP1": (U2X - 0.9, U2Y + 7.6, 0), "TP3": (U2X + 1.2, U2Y + 8.4, 0), "TP2": (U2X + 2.7, U2Y + 6.6, 0),
+    # ---- top band: Qwiic, USB-C, power ---------------------------------------------------------
+    "J7": (11.75, 3.3, 180), "R30": (12.0, 11.0, 180), "R31": (8.0, 11.0, 0),
+    "J5": (JX, 3.7 - USB_OUT, 180),
+    "R21": (JX - 3.3, 9.6, 270), "R28": (JX - 1.05, 9.6, 270), "R29": (JX + 1.2, 9.6, 270), "R20": (JX + 3.45, 9.6, 270),
+    "D1": (29.8, 11.6, 180), "R27": (24.6, 13.7, 180),
+    "U3": (34.6, 4.8, 270), "C12": (29.85, 3.0, 90), "C8": (27.9, 3.0, 90),
+    "C10": (UX - 17.6, 6.6, 90), "C11": (UX - 15.3, 6.6, 90), "C7": (UX - 13.2, 6.4, 90),
+    "C14": (UX - 16.6, 27.0, 90),
+    # ---- MCU: ESP32-C5 at the top-right corner ----------------------------------------------------
+    "U1": (UX, UY, 0),
+    "R18": (UX - 11.2, 9.4, 270), "SW1": (UX - 15.5, 13.2, 270), "C9": (UX - 15.5, 17.8, 180),
+    "SW2": (UX + 1.0, 29.8, 0), "R22": (UX + 7.3, 27.9, 180), "D4": (UX + 7.3, 30.2, 180),
+    "J6": (HX, HY, 90), "R19": (HX + 4 * 2.54, HY + 3.9, 90),
+    # ---- relay drivers below the header, one group over each relay's coil pins -------------------
+    "D2": (K1_X - 0.5, HY + 7.06, 0), "Q1": (K1_X + 3.8, HY + 5.86, 270),
+    "R23": (K1_X + 0.4, HY + 3.96, 0), "R25": (K1_X + 7.0, HY + 5.26, 90),
+    "D3": (K2_X - 0.4, HY + 7.06, 0), "Q2": (K2_X + 3.8, HY + 5.86, 270),
+    "R24": (K2_X + 0.2, HY + 3.96, 0), "R26": (K2_X + 6.65, HY + 6.06, 90),
+    "C13": (K2_X - 5.2, HY + 5.26, 90),
 }
-# the case's four screws run from the back plate through these holes into the cover, so each screw
-# is reachable from outside: every hole edge keeps 6.5 mm from mains copper (H3 sits nearest, by L_IN)
-HOLES = [(3.5, 23.0), (87.0, 43.5), (21.0, H - 2.5), (28.5, 5.0)]
-ANTENNA_KEEPOUT = (61.5, 0.0, W, 6.8)           # x0, y0, x1, y1 (y down): clear of copper under/beside U1 antenna
-LDO_3V3_ZONE = [(49.6, 15.2), (56.0, 15.2), (56.0, 22.4), (49.6, 22.4)]  # solid 3V3 heat spreader on U3's SOT-223 tab
+# the case's four screws run from the back plate through these holes into the cover, so each screw is reachable from
+# outside: every hole edge keeps 6.5 mm from mains copper. One between the relays, below their coil pins
+HOLES = [(3.4, 3.4), (3.4, H - 13.9), ((K1_X + K2_X) / 2, H - 27.4), (W - 2.7, 40.2)]
+ANTENNA_KEEPOUT = (UX - 11.2, 0.0, W, 7.6)     # x0, y0, x1, y1 (y down): no copper under or beside U1's antenna
+# solid 3V3 heat spreader on U3's SOT-223 tab, up to the module's decoupling capacitors
+LDO_3V3_ZONE = [(32.6, 0.7), (UX - 12.0, 0.7), (UX - 12.0, 9.7), (32.6, 9.7)]
 
 
 def _relay_copper(k):
@@ -128,7 +133,6 @@ for _k in (1, 2):
     RELAY_ZONES.update(_z)
     STITCH.update(_s)
 FUSE_GAP = (1.6, 3.1)   # half width, half length of the copper-free area under each fuse, between its pads
-H3_RING = 4.0   # no copper around H3: its screw sits between L_IN and the CT / ground area
 
 MM = pcbnew.FromMM
 
@@ -189,16 +193,21 @@ def arc(board, layer, start, mid, end, w=0.1):
 
 
 def outline(board):
-    r = CORNER_R
-    seg(board, pcbnew.Edge_Cuts, (r, 0), (W - r, 0))
-    seg(board, pcbnew.Edge_Cuts, (W, r), (W, H - r))
-    seg(board, pcbnew.Edge_Cuts, (W - r, H), (r, H))
-    seg(board, pcbnew.Edge_Cuts, (0, H - r), (0, r))
-    k = r * (1 - math.sqrt(0.5))
-    arc(board, pcbnew.Edge_Cuts, (0, r), (k, k), (r, 0))
-    arc(board, pcbnew.Edge_Cuts, (W - r, 0), (W - k, k), (W, r))
-    arc(board, pcbnew.Edge_Cuts, (W, H - r), (W - k, H - k), (W - r, H))
-    arc(board, pcbnew.Edge_Cuts, (r, H), (k, H - k), (0, H - r))
+    """Rounded rectangle with the antenna cut-out at the top-right corner: the module's antenna end hangs over it."""
+    r, nr, k = CORNER_R, NOTCH_R, 1 - math.sqrt(0.5)
+    e = pcbnew.Edge_Cuts
+    seg(board, e, (r, 0), (NOTCH_X - nr, 0))
+    arc(board, e, (NOTCH_X - nr, 0), (NOTCH_X - nr * k, nr * k), (NOTCH_X, nr))
+    seg(board, e, (NOTCH_X, nr), (NOTCH_X, NOTCH_Y - nr))
+    arc(board, e, (NOTCH_X, NOTCH_Y - nr), (NOTCH_X + nr * k, NOTCH_Y - nr * k), (NOTCH_X + nr, NOTCH_Y))
+    seg(board, e, (NOTCH_X + nr, NOTCH_Y), (W - r, NOTCH_Y))
+    arc(board, e, (W - r, NOTCH_Y), (W - r * k, NOTCH_Y + r * k), (W, NOTCH_Y + r))
+    seg(board, e, (W, NOTCH_Y + r), (W, H - r))
+    arc(board, e, (W, H - r), (W - r * k, H - r * k), (W - r, H))
+    seg(board, e, (W - r, H), (r, H))
+    arc(board, e, (r, H), (r * k, H - r * k), (0, H - r))
+    seg(board, e, (0, H - r), (0, r))
+    arc(board, e, (0, r), (r * k, r * k), (r, 0))
 
 
 def text(board, s, x, y, size=1.0, layer=pcbnew.F_SilkS, rot=0, bold=False):
@@ -309,9 +318,10 @@ def write_dru():
 
 # ----------------------------------------------------------------------------------------------
 def tight_courtyard(fp):
-    """Replace a footprint's courtyard with its fab-layer body + 0.25 mm. Used for the HLK-PM01 (the stock one is for the larger HLK-PMxx family outline)."""
+    """Replace a footprint's courtyard with its fab-layer body + 0.25 mm and its silkscreen with the body outline + 0.12
+    mm. Used for the HLK-PM01 (the stock outlines are for the larger HLK-PMxx family)."""
     for item in list(fp.GraphicalItems()):
-        if item.GetLayer() in (pcbnew.F_CrtYd, pcbnew.B_CrtYd):
+        if item.GetLayer() in (pcbnew.F_CrtYd, pcbnew.B_CrtYd, pcbnew.F_SilkS):
             fp.Remove(item)
     xs, ys = [], []
     for g in fp.GraphicalItems():
@@ -325,6 +335,12 @@ def tight_courtyard(fp):
     s.SetStart(pcbnew.VECTOR2I(min(xs) - MM(0.25), min(ys) - MM(0.25)))
     s.SetEnd(pcbnew.VECTOR2I(max(xs) + MM(0.25), max(ys) + MM(0.25)))
     fp.Add(s)
+    silk = pcbnew.PCB_SHAPE(fp, pcbnew.SHAPE_T_RECT)
+    silk.SetLayer(pcbnew.F_SilkS)
+    silk.SetWidth(MM(0.12))
+    silk.SetStart(pcbnew.VECTOR2I(min(xs) - MM(0.12), min(ys) - MM(0.12)))
+    silk.SetEnd(pcbnew.VECTOR2I(max(xs) + MM(0.12), max(ys) + MM(0.12)))
+    fp.Add(silk)
 
 
 def schematic_nets() -> dict:
@@ -393,6 +409,9 @@ def build() -> pcbnew.BOARD:
         board.Add(fp)
         if c.ref == "PS1":
             tight_courtyard(fp)
+        if c.ref == "PS1":      # beside the body, where nothing else wants the space
+            fp.Reference().SetPosition(P(PX + 13.8, PY - 8.0))
+            fp.Reference().SetTextAngleDegrees(90)
         fp.Reference().SetTextSize(pcbnew.VECTOR2I(MM(0.8), MM(0.8)))
         fp.Reference().SetTextThickness(MM(0.12))
         if c.ref in ("J1", "J2", "J3", "J4", "J5", "J7"):      # these carry what they are for instead (labels())
@@ -411,12 +430,6 @@ def build() -> pcbnew.BOARD:
     x0, y0, x1, y1 = ANTENNA_KEEPOUT
     zone(board, None, [pcbnew.F_Cu, pcbnew.B_Cu], [(x0, y0), (x1, y0), (x1, y1), (x0, y1)], rule_area=True,
          name="antenna keep-out")
-
-    # no copper around H3 (its screw would otherwise bridge L_IN to the ground pour)
-    hx, hy = HOLES[2]
-    ring = [(hx + H3_RING * math.cos(a * math.pi / 16), hy + H3_RING * math.sin(a * math.pi / 16))
-            for a in range(32)]
-    zone(board, None, [pcbnew.F_Cu, pcbnew.B_Cu], ring, rule_area=True, name="H3 screw keep-out")
 
     # no copper under the fuses: an open, charred fuse must not find a bridge below it
     fw, fl = FUSE_GAP
@@ -526,84 +539,118 @@ def place_references(board):
         print("references hidden (no free spot):", ", ".join(sorted(hidden)))
 
 
+def _bottom_obstacles(board, skip=None):
+    """What bottom-side text must not touch: through-hole pads and holes, the relay contacts' mask openings, other
+    bottom silk and the board edge."""
+    shapes = [p.GetEffectiveShape(pcbnew.B_Cu) for fp in board.GetFootprints() for p in fp.Pads()
+              if p.GetAttribute() in (pcbnew.PAD_ATTRIB_PTH, pcbnew.PAD_ATTRIB_NPTH)]
+    shapes += [p.GetEffectiveHoleShape() for fp in board.GetFootprints() for p in fp.Pads() if p.GetDrillSizeX()]
+    shapes += [d.GetEffectiveShape() for d in board.Drawings()
+               if d.GetLayer() in (pcbnew.B_Mask, pcbnew.B_SilkS, pcbnew.Edge_Cuts)
+               and (skip is None or d.m_Uuid != skip.m_Uuid)]
+    return shapes
+
+
+def fit(board, t, spots, what):
+    """Move text t to the first (x, y, rotation, size) spot where it touches no silk, pad, hole or edge."""
+    bottom = t.GetLayer() == pcbnew.B_SilkS
+    obstacles = _bottom_obstacles(board, skip=t) if bottom else _silk_obstacles(board, skip=t)
+    for x, y, rot, size in spots:
+        t.SetTextSize(pcbnew.VECTOR2I(MM(size), MM(size)))
+        t.SetTextThickness(MM(size * (0.2 if t.IsBold() else 0.15)))
+        t.SetTextAngleDegrees(rot)
+        t.SetPosition(P(x, y))
+        if _clear(t, obstacles):
+            return
+    if os.environ.get("SILK_DEBUG"):
+        x, y, rot, size = spots[0]
+        t.SetTextAngleDegrees(rot)
+        t.SetPosition(P(x, y))
+        me = t.GetEffectiveShape()
+        for o in obstacles:
+            if me.Collide(o, MM(SILK_GAP)):
+                bb = o.BBox()
+                print("  blocked by", [round(v / 1e6 - d, 2) for v, d in ((bb.GetLeft(), OX), (bb.GetTop(), OY),
+                                                                           (bb.GetRight(), OX), (bb.GetBottom(), OY))])
+    raise AssertionError(f"no free spot for {what}")
+
+
 def silkscreen(board):
     B = pcbnew.B_SilkS
-    title = text(board, "C6 ENERGY RELAY v1.0", 17.5, 17.0, 1.0, bold=True)
-    obstacles = _silk_obstacles(board, skip=title)
-    spots = [(size, 15.0 + 0.5 * i, y) for size in (1.0, 0.9, 0.8)
-             for y in (17.0, 18.0, 16.0, 19.0, 20.0) for i in range(13)]
-    for size, x, y in spots:
-        title.SetTextSize(pcbnew.VECTOR2I(MM(size), MM(size)))
-        title.SetTextThickness(MM(size * 0.2))
-        title.SetPosition(P(x, y))
-        if _clear(title, obstacles):
-            break
-    else:
-        raise AssertionError("no free spot for the board title")
-    text(board, "MAINS", 39.2, 74.5 + DH, 0.9, rot=90, bold=True)
-    text(board, "100-240V~", 40.7, 74.5 + DH, 0.9, rot=90, bold=True)
-    # the bottom side under the mains area is bare, so the full warning goes there
-    warn = text(board, "DANGER: MAINS VOLTAGE", 34.0, 57.5 + DH, 1.5, layer=B, bold=True)
-    keep = text(board, "keep 6.5 mm clear, no metal near", 34.0, 60.0 + DH, 1.0, layer=B)
-    pads = [p.GetEffectiveShape(pcbnew.F_Cu) for fp in board.GetFootprints() for p in fp.Pads()
-            if p.GetAttribute() == pcbnew.PAD_ATTRIB_PTH]
-    pads += [d.GetEffectiveShape() for d in board.Drawings() if d.GetLayer() == pcbnew.B_Mask]  # relay contacts
-    for x, y in ((34.0, 60.3 + DH), (33.0, 60.3 + DH), (32.4, 60.3 + DH),
-                 (32.4, 60.8 + DH), (34.0, 61.5 + DH)):                     # below the MOV and T1 pads
-        warn.SetPosition(P(x, y))
-        keep.SetPosition(P(x, y + 2.5))
-        if _clear(warn, pads) and _clear(keep, pads):
-            break
-    else:
-        raise AssertionError("no free spot for the mains warning")
-    text(board, "C6 ENERGY RELAY v1.0", 45.0, 30.0, 1.5, layer=B, bold=True)
-    text(board, "USB-C: power and flashing (isolated from mains)", 45.0, 33.0, 1.0, layer=B)
-    # terminal names on the bottom silk (the header bodies cover the top side) and short ones on top
+    # ---- top: what each plug is ------------------------------------------------------------------
+    # the CT pins above their burden resistors
+    for i, lab in enumerate(("CT1+", "CT1-", "CT2+", "CT2-")):
+        text(board, lab, PLACE["J4"][0] + i * 3.81, H - 11.3, 0.8, bold=True)
+    # mains input: in the gap between the CT terminal and F1
+    text(board, "MAINS", FX1 - 5.9, H - 10.5, 0.9, rot=90, bold=True)
+    text(board, "100-240V~", FX1 - 4.4, H - 10.5, 0.9, rot=90, bold=True)
+    # relays: relay 1 in the gap left of its contact copper, relay 2 between the relays
+    for name, x in (("RELAY 1", K1_X - 9.6), ("RELAY 2", (K1_X + K2_X) / 2 - 0.8)):
+        text(board, name, x, H - 12.0, 0.9, rot=90, bold=True)
+        text(board, "COM NO", x + 1.45, H - 12.0, 0.8, rot=90, bold=True)
+    # Qwiic pin names in the order of the pins: left to right on top, and left to right as read from the bottom
+    qx = PLACE["J7"][0]
+    i2c = {f"IO{design.GPIO['I2C_SDA']}": "SDA", f"IO{design.GPIO['I2C_SCL']}": "SCL"}
+    names = [i2c.get(design.pin_net("J7", p), design.pin_net("J7", p)) for p in ("4", "3", "2", "1")]
+    pins = text(board, " ".join(names), qx, 7.4, 0.8)
+    fit(board, pins, [(qx + dx, y, 0, 0.8) for y in (7.4, 7.6, 7.8, 8.0) for dx in (0, -0.4, -0.8, -1.2, -1.6)],
+        "Qwiic pins")
+    q = text(board, "QWIIC", qx, 8.7, 0.9, bold=True)
+    fit(board, q, [(qx + dx, y, 0, 0.9) for y in (8.7, 8.9, 9.1) for dx in (0, -0.5, -1.0, 0.5)], "QWIIC")
+    # buttons
+    en = text(board, "EN", 0, 0, 0.8, bold=True)
+    sx, sy, _ = PLACE["SW1"]
+    fit(board, en, [(sx - 3.3 - dx, sy, 90, 0.8) for dx in (0, 0.2, 0.4, 0.6)] +
+        [(sx, sy + 6.2 + dy, 0, 0.8) for dy in (0, 0.3, 0.6)], "EN")
+    boot = text(board, "BOOT", 0, 0, 0.8, bold=True)
+    bx, by, _ = PLACE["SW2"]
+    fit(board, boot, [(bx - 4.6 - dx, by, 90, 0.8) for dx in (0, 0.3, 0.6)] +
+        [(bx, by + 3.7 + dy, 0, 0.8) for dy in (0, 0.3)], "BOOT")
+    # GPIO header pin names: lower (odd) row labelled below it, upper (even) row above it
+    x0, y0, _ = PLACE["J6"]
+    strap = {f"IO{n}" for n in design.STRAPPING}
+    for i, net in enumerate(design.HEADER_PINS):
+        col, row = divmod(i, 2)
+        lab = net.replace("IO", "").replace("+5V", "5V") + ("*" if net in strap else "")
+        text(board, lab, x0 + col * 2.54, y0 + 1.6 if row == 0 else y0 - 2.54 - 1.75, 0.8)
+    legend = text(board, "GPIO   * = strapping pin", 0, 0, 0.8)
+    fit(board, legend, [(x0 + 8.9 + dx, y0 - 2.54 - 3.0 - dy, 0, 0.8) for dy in (0, 0.2, 0.4) for dx in (0, -1, 1)],
+        "header legend")
+    # board name: somewhere in the left column
+    title = text(board, "C6 ENERGY RELAY v1.0", 0, 0, 1.0, bold=True)
+    fit(board, title, [(x, y, 0, size) for size in (0.9, 0.8) for y in (23.5, 24.0, 23.0, 22.5, 22.0, 21.5)
+                       for x in (7.7, 7.9, 7.5, 8.2)] +
+        [(1.3, y, 90, size) for size in (0.9, 0.8) for y in (17.0, 18.0, 16.0)], "board title")
+
+    # ---- bottom ----------------------------------------------------------------------------------
+    # terminal names under the plugs (the header bodies cover the top side)
     for ref, labels in (("J1", ["L", "N/L2"]), ("J2", ["COM", "NO"]), ("J3", ["COM", "NO"]),
                         ("J4", ["CT1+", "CT1-", "CT2+", "CT2-"])):
         x, y, _ = PLACE[ref]
         pitch = 3.81 if ref == "J4" else 5.08
         for i, lab in enumerate(labels):
-            text(board, lab, x + i * pitch, (74.6 if ref == "J4" else 78.4) + DH, 0.9, layer=B)
-    text(board, "L", 30.0, 66.3 + DH, 1.0, bold=True)
-    text(board, "N/L2", 35.08, 66.3 + DH, 0.8, bold=True)
-    # beside each relay header, below the bare contact copper (the header's slot is where the name used to be)
-    text(board, "RELAY 1", PLACE["K1"][0] - 9.9, 76.6 + DH, 1.0, layer=B, bold=True)
-    text(board, "RELAY 2", PLACE["K2"][0] - 9.9, 76.6 + DH, 1.0, layer=B, bold=True)
-    # what each plug is, on the top side: the CT pins above their filter resistors, the relays beside their
-    # headers (left pin first), USB and Qwiic beside their sockets
-    for i, lab in enumerate(("CT1+", "CT1-", "CT2+", "CT2-")):
-        text(board, lab, PLACE["J4"][0] + i * 3.81, 62.0 + DH, 0.8, bold=True)
-    for ref, name, x in (("J2", "RELAY 1", K1_X - 9.5), ("J3", "RELAY 2", K2_X - 9.5)):
-        text(board, name, x, 74.4 + DH, 0.8, bold=True)
-        text(board, "COM NO", x, 76.0 + DH, 0.8, bold=True)
-    text(board, "USB", 58.2, 2.5, 1.0, bold=True)
-    text(board, "QWIIC", 3.0, 3.0, 0.9, bold=True)
-    # Qwiic pin names in the order of the pins: left to right on top, and left to right as read from the bottom
-    qx = PLACE["J7"][0]
-    i2c = {f"IO{design.GPIO['I2C_SDA']}": "SDA", f"IO{design.GPIO['I2C_SCL']}": "SCL"}
-    names = [i2c.get(design.pin_net("J7", p), design.pin_net("J7", p)) for p in ("4", "3", "2", "1")]
-    text(board, " ".join(names), qx, 6.95, 0.8)
+            text(board, lab, x + i * pitch, H - (5.4 if ref == "J4" else 1.6), 0.9, layer=B)
+    for name, k in (("RELAY 1", K1_X), ("RELAY 2", K2_X)):
+        text(board, name, k - 9.9, H - 3.4, 1.0, layer=B, bold=True)
     text(board, "QWIIC", qx, 2.0, 1.0, layer=B, bold=True)
+    usb = text(board, "USB", JX, 12.5, 1.0, layer=B, bold=True)
+    fit(board, usb, [(JX + dx, y, 0, 1.0) for y in (12.5, 13.5, 14.5) for dx in (0, -1, 1, -2, 2)], "USB")
     text(board, " ".join(reversed(names)), qx, 4.0, 0.9, layer=B)
-    # GPIO header pin names: odd row (y0) labelled below it, even row (y0 - 2.54) above it
-    x0, y0, _ = PLACE["J6"]
-    strap = {f"IO{n}" for n in design.STRAPPING}
-    for i, net in enumerate(design.HEADER_PINS):
-        col, row = divmod(i, 2)
-        x = x0 + col * 2.54
-        lab = net.replace("IO", "").replace("+5V", "5V") + ("*" if net in strap else "")
-        t = text(board, lab, x, y0 + 1.6 if row == 0 else y0 - 2.54 - 1.85, 0.8)
-        if col == 0:            # first column: keep 3V3 short of the adjacent GND label
-            t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT)
-            t.SetPosition(P(x - 0.75, t.GetPosition().y / 1e6 - OY))
-            if lab == "3V3":
-                t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_RIGHT)
-                t.SetPosition(P(x + 1.05, t.GetPosition().y / 1e6 - OY))
-    t = text(board, "GPIO   * = strapping pin", x0 - 0.75, y0 + 3.2, 0.8)
-    t.SetHorizJustify(pcbnew.GR_TEXT_H_ALIGN_LEFT)
-    text(board, "EN", PLACE["SW1"][0], PLACE["SW1"][1] + 3.6, 0.8)
-    text(board, "BOOT", PLACE["SW2"][0], PLACE["SW2"][1] + 3.6, 0.8)
+    # the bottom side under the mains area: the full warning
+    warn = text(board, "DANGER: MAINS VOLTAGE", 0, 0, 1.3, layer=B, bold=True)
+    fit(board, warn, [(PX + 6 + dx, y, 0, size) for size in (1.3, 1.2, 1.1) for y in (40.0, 39.0, 38.0, 41.0, 37.0)
+                      for dx in (0, -1, 1, -2, 2)], "mains warning")
+    keep = text(board, "keep 6.5 mm clear, no metal near", 0, 0, 0.9, layer=B)
+    wx, wy = warn.GetPosition().x / 1e6 - OX, warn.GetPosition().y / 1e6 - OY
+    fit(board, keep, [(wx + dx, wy + dy, 0, 0.9) for dy in (2.2, 2.4, -2.2) for dx in (0, -1, 1, -2, 2)],
+        "mains warning line 2")
+    name = text(board, "C6 ENERGY RELAY v1.0", 0, 0, 1.4, layer=B, bold=True)
+    fit(board, name, [(PX + 6 + dx, y, 0, size) for size in (1.4, 1.2) for y in (26.0, 27.0, 25.0, 28.0, 24.0)
+                      for dx in (0, -1, 1, -2, 2)], "bottom title")
+    note = text(board, "USB-C: power and flashing (isolated from mains)", 0, 0, 0.9, layer=B)
+    nx, ny = name.GetPosition().x / 1e6 - OX, name.GetPosition().y / 1e6 - OY
+    fit(board, note, [(nx + dx, ny + dy, 0, 0.9) for dy in (2.2, 2.4, -2.2) for dx in (0, -1, 1, -2, 2, 3)],
+        "USB note")
 
 
 def features(board) -> dict:
