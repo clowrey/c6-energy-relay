@@ -162,9 +162,9 @@ touched from the back of the case, so every hole keeps 6.5 mm from mains copper,
 low-voltage side.
 
 **Layers.** The board is routed by hand, with no sharp bend anywhere. The tracks are listed in
-[`hw/routes.py`](hw/routes.py), either as splines (the mains feeds, the I2C and test-pad runs, the short
-links) or as straight legs whose bends [`hw/route.py`](hw/route.py) rounds into arcs; [`hw/spline.py`](hw/spline.py)
-turns the splines into arcs, since KiCad tracks can't be splines. Tracks that run together (the bus from
+[`hw/routes.py`](hw/routes.py) as waypoints, and every straight run is at 0°, 45° or 90°:
+[`hw/route.py`](hw/route.py) splits any other leg into a straight run and a 45° run, and rounds every bend into an
+arc (1 mm radius for signals, 2.5 × the width for power and mains). Tracks that run together (the bus from
 the module to the BL0939 and the Qwiic port, the fan-out to the GPIO header, the USB pair) turn on
 concentric arcs, so they stay evenly spaced round every corner. Corners where another branch joins stay
 sharp, so the joint stays connected. Signal tracks are 0.2 mm, and ground is poured on both layers and
@@ -189,7 +189,7 @@ The Qwiic port (J7, at the left end of the top edge) is a 4-pin JST SH socket fo
 displays: pin 1 GND, 2 3V3, 3 SDA (GPIO2), 4 SCL (GPIO3), with 4.7 kΩ pull-ups to 3V3. GPIO2 and GPIO3 are
 strapping pins (MTMS and MTDI), but the pull-ups hold them high at reset, which is what they need there.
 The silkscreen marks the strapping pins on the header (7, 25, 26, 27) with `*`: keep them free of pull-downs at reset. The top side names each plug: the CT pins
-behind their terminal, `RELAY 1` / `RELAY 2` with `COM NO` (left pin first) beside theirs, `MAINS`, `USB` and `QWIIC`. The Qwiic pins are named in pin order below the socket (`SCL SDA 3V3 GND`)
+behind their terminal, `RELAY 1` / `RELAY 2` beside theirs with `COM` and `NO` each over its own contact's copper, `MAINS`, `USB` and `QWIIC`. The Qwiic pins are named in pin order below the socket (`SCL SDA 3V3 GND`)
 and again on the bottom side, in the order you see them from there.
 The bottom side names every terminal pin.
 

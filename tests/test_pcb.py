@@ -247,6 +247,22 @@ def test_tracks_rounded(board_dump):
     assert sharp == [], f"{len(sharp)} sharp corners, e.g. {sharp[:8]}"
 
 
+def test_tracks_at_45_degrees(board_dump):
+    """Every straight track runs at 0, 45 or 90 degrees: off the grid by at most 0.035 mm over its length (pads of
+    different sizes that don't quite line up)."""
+    import math
+    off = []
+    for c in board_dump["copper"]:
+        if c["kind"] != "PCB_TRACK":
+            continue
+        dx, dy = c["end"][0] - c["start"][0], c["end"][1] - c["start"][1]
+        length = math.hypot(dx, dy)
+        miss = abs(math.remainder(math.atan2(dy, dx), math.pi / 4))
+        if length * math.sin(miss) > 0.035:
+            off.append((c["net"], c["layer"], [round(v, 2) for v in c["start"]], round(math.degrees(math.atan2(dy, dx)), 1)))
+    assert off == [], f"{len(off)} tracks off the 45-degree grid, e.g. {off[:8]}"
+
+
 # ---- Second audit --------------------------------------------------------------------------------
 def _track_pts(c):
     if c["kind"] == "PCB_ARC":
@@ -316,8 +332,12 @@ def test_plug_openings_start_at_the_board(features):
 def test_top_side_names_the_plugs():
     """The top silkscreen says what each plug is: CT pins, both relays with their pin order, mains, USB, QWIIC."""
     text = (HW / "c6-energy-relay.kicad_pcb").read_text(encoding="utf8")
-    for label in ("CT1+", "CT1-", "CT2+", "CT2-", "RELAY 1", "RELAY 2", "COM NO", "MAINS", "100-240V~", "USB", "QWIIC"):
+    for label in ("CT1+", "CT1-", "CT2+", "CT2-", "RELAY 1", "RELAY 2", "MAINS", "100-240V~", "USB", "QWIIC"):
         assert f'(gr_text "{label}"' in text, label
+    # each relay contact is named over its own copper: left to right COM, NO (relay 1), COM, NO (relay 2)
+    contacts = sorted((float(m.group(2)), m.group(1)) for m in
+                      re.finditer(r'\(gr_text "(COM|NO)"\s*\(at ([\d.]+) [\d.]+[^)]*\)\s*\(layer "F.SilkS"', text))
+    assert [n for _, n in contacts] == ["COM", "NO", "COM", "NO"], contacts
     # the Qwiic pinout: beside the port on top, and on the bottom in the order seen from there
     top, bottom = (re.search(rf'\(gr_text "{s}"[^)]*\)\s*\(layer "([^"]+)"', text) for s in ("SCL SDA 3V3 GND", "GND 3V3 SDA SCL"))
     assert top and top.group(1) == "F.SilkS" and bottom and bottom.group(1) == "B.SilkS"

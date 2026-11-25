@@ -15,7 +15,6 @@ import pcbnew
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 from hw.gen_pcb import NET, OX, OY, PCB  # noqa: E402
-from hw.spline import spline_path  # noqa: E402
 
 MM = pcbnew.FromMM
 LAYERS = {"F": pcbnew.F_Cu, "B": pcbnew.B_Cu}
@@ -56,6 +55,55 @@ def bend_radius(width_mm: float) -> float:
     return max(1.0, 2.5 * width_mm)
 
 
+def _turn(u, v):
+    """Angle in radians between two directions (0 = straight on)."""
+    import math
+    if u is None or v is None:
+        return 0.0
+    return abs(math.remainder(math.atan2(v[1], v[0]) - math.atan2(u[1], u[0]), 2 * math.pi))
+
+
+def octilinear(pts, start=None, end=None, inside=None):
+    """Give every leg of a polyline (points in nm) a direction at a multiple of 45 degrees: a leg at any
+    other angle becomes a straight run plus a 45-degree run. Of the two orders, take the one that turns
+    least where it meets the legs before and after (start / end: the direction to leave the first point
+    and to arrive at the last one); a bend point that would land in the start or end pad (inside(i, q))
+    is avoided. -> [(point, index of the source point or None for an inserted bend)]."""
+    import math
+    out = [(pts[0], 0)]
+    prev = tuple(start) if start else None
+    for i in range(1, len(pts)):
+        a, c = out[-1][0], pts[i]
+        dx, dy = c[0] - a[0], c[1] - a[1]
+        if math.hypot(dx, dy) < 1:
+            continue
+        off = abs(math.remainder(math.degrees(math.atan2(dy, dx)), 45))
+        nxt = None
+        if i + 1 < len(pts):
+            nxt = (pts[i + 1][0] - c[0], pts[i + 1][1] - c[1])
+        elif end:
+            nxt = tuple(end)
+        # a leg that misses the 45-degree grid by a few hundredths of a mm (pads of different sizes) stays one leg
+        if math.hypot(dx, dy) * math.sin(math.radians(off)) > MM(0.03):
+            m = min(abs(dx), abs(dy))
+            diag = (math.copysign(m, dx), math.copysign(m, dy))
+            straight = (dx - diag[0], dy - diag[1])
+            best = None
+            for first, second in ((straight, diag), (diag, straight)):
+                q = (a[0] + first[0], a[1] + first[1])
+                cost = _turn(prev, first) + _turn(first, second) + _turn(second, nxt)
+                if inside and (inside(0, q) and i == 1 or inside(len(pts) - 1, q) and i == len(pts) - 1):
+                    cost += 10
+                if best is None or cost < best[0] - 1e-6:
+                    best = (cost, q, second)
+            out.append((best[1], None))
+            prev = best[2]
+        else:
+            prev = (dx, dy)
+        out.append((c, i))
+    return out
+
+
 def _fillets(pts, width, fixed, max_d=None, radii=None):
     """Corner fillets for one polyline (points in nm). fixed[i]: keep corner i sharp (a junction);
     max_d[i]: the longest tangent allowed at corner i (other copper joins the legs further out);
@@ -94,7 +142,8 @@ def _fillets(pts, width, fixed, max_d=None, radii=None):
 
 
 def add_routes(board, routes):
-    """Tracks as planned in routes.py, with every bend rounded into an arc. Corners where other copper
+    """Tracks as planned in routes.py: every leg at 0, 45 or 90 degrees (octilinear()), every bend rounded into an
+    arc. Corners where other copper
     of the net joins (another path's end or vertex, a via, a pad) stay sharp so the joint is kept."""
     nets = board.GetNetsByName()
     res = Resolver(board)
@@ -116,28 +165,32 @@ def add_routes(board, routes):
         for path in paths:
             layer, width = path.get("layer", "F"), path.get("w", 0.2)
             raw = path.get("pts", [])
-            pts = []
-            for p, q in zip(raw, [res(p) for p in raw]):
+            pts = []            # (source point, nm point, index in raw)
+            for j, (p, q) in enumerate(zip(raw, [res(p) for p in raw])):
                 if not pts or key(q) != pts[-1][1]:
-                    pts.append((p, key(q)))
-            xy = [q for _, q in pts]
+                    pts.append((p, key(q), j))
             import math
+            first = res.pad(pts[0][0], net.GetNetname()) if pts else None
+            last = res.pad(pts[-1][0], net.GetNetname()) if pts else None
+
+            def inside(i, q):
+                pad = first if i == 0 else last
+                return pad is not None and pad.HitTest(pcbnew.VECTOR2I(int(q[0]), int(q[1])))
+
+            oct_pts = octilinear([q for _, q, _ in pts], path.get("start"), path.get("end"), inside) if pts else []
+            xy = [q for q, _ in oct_pts]
             others = [a for a, owner in anchors[net_name] if owner != id(path)]   # other paths, vias
-            fixed, max_d = [], []
-            for i, (src, q) in enumerate(pts):
+            fixed, max_d, radii = [], [], []
+            for i, (q, src_i) in enumerate(oct_pts):
+                src = pts[src_i][0] if src_i is not None else None
                 dists = [math.dist(a, q) for a in others]
-                fixed.append(isinstance(src[0], str) or i in (0, len(pts) - 1) or
+                fixed.append((src is not None and isinstance(src[0], str)) or i in (0, len(oct_pts) - 1) or
                              any(dd < MM(0.05) for dd in dists))
                 # a branch joining a leg near the bend: the arc must end before it
                 max_d.append(min([dd - MM(width) for dd in dists if dd < MM(3 * bend_radius(width))],
                                  default=float("inf")))
-            radii = path.get("radii")
-            if radii:       # given per point of the path as written: map onto the de-duplicated points
-                keep = []
-                for j, p in enumerate(raw):
-                    if not keep or key(res(p)) != key(res(raw[keep[-1]])):
-                        keep.append(j)
-                radii = [radii[j] if j < len(radii) else None for j in keep]
+                r = path.get("radii")
+                radii.append(r[pts[src_i][2]] if r and src_i is not None and pts[src_i][2] < len(r) else None)
             plan = _fillets(xy, width, fixed, max_d, radii)
 
             def vec(p):
@@ -162,37 +215,6 @@ def add_routes(board, routes):
                 t.SetEnd(vec(b))
                 add(t)
 
-            if path.get("spline") and len(xy) > 1:
-                pieces = spline_path(xy, path.get("start"), path.get("end"))
-
-                def inside(pad, q):
-                    return pad is not None and pad.HitTest(vec(q))
-
-                # inside the pad a path starts or ends on, the curve becomes one straight piece to the pad's centre:
-                # pieces lying wholly inside a pad count as dangling in KiCad's DRC
-                first, last = res.pad(pts[0][0], net.GetNetname()), res.pad(pts[-1][0], net.GetNetname())
-                if last is not None:
-                    k = next((i for i, pc in enumerate(pieces) if inside(last, pc[-1])), len(pieces) - 1)
-                    if k < len(pieces) - 1 or pieces[k][0] == "arc":
-                        pieces = pieces[:k] + [("line", pieces[k][1], xy[-1])]
-                if first is not None:
-                    k = max((i for i, pc in enumerate(pieces) if inside(first, pc[1])), default=0)
-                    if k > 0 or pieces[k][0] == "arc":
-                        pieces = [("line", xy[0], pieces[k][-1])] + pieces[k + 1:]
-                # straight pieces in a row that bend by a few degrees at most become one (no hidden kinks)
-                merged = []
-                for pc in pieces:
-                    if merged and pc[0] == merged[-1][0] == "line":
-                        a, b, c = merged[-1][1], merged[-1][2], pc[2]
-                        turn = math.atan2(c[1] - b[1], c[0] - b[0]) - math.atan2(b[1] - a[1], b[0] - a[0])
-                        if abs(math.remainder(turn, 2 * math.pi)) < math.radians(3):
-                            merged[-1] = ("line", a, c)
-                            continue
-                    merged.append(pc)
-                pieces = merged
-                for kind, *p in pieces:
-                    (line if kind == "line" else arc)(*p)
-                xy = []
             cur = xy[0] if xy else None
             for i in range(1, len(xy)):
                 end = plan[i][0] if i in plan else xy[i]

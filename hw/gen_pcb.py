@@ -83,7 +83,7 @@ PLACE = {
     "R14": (3.6, U2Y + 1.775, 0), "R15": (3.6, U2Y + 3.675, 0), "R7": (3.6, U2Y + 8.675, 0),
     "C1": (6.1, U2Y - 5.9, 90), "C2": (6.1, U2Y - 2.45, 270),
     "C3": (6.1, U2Y + 1.0, 90), "C4": (6.1, U2Y + 4.45, 270), "C5": (6.1, U2Y + 7.9, 90),
-    "C6": (U2X - 1.3, U2Y - 6.6, 0), "R17": (U2X - 0.3, U2Y - 8.5, 0),
+    "C6": (U2X - 1.7, U2Y - 6.6, 0), "R17": (U2X - 0.3, U2Y - 8.5, 0),
     # SEL pull-down and the CF / I_LEAK / ZX test pads in a row under the chip, fed from under its body
     "R16": (U2X - 3.0, U2Y + 7.9, 270),
     "TP1": (U2X - 0.9, U2Y + 7.6, 0), "TP3": (U2X + 1.2, U2Y + 8.4, 0), "TP2": (U2X + 2.7, U2Y + 6.6, 0),
@@ -92,19 +92,19 @@ PLACE = {
     "J5": (JX, 3.7 - USB_OUT, 180),
     "R21": (JX - 3.3, 9.6, 270), "R28": (JX - 1.05, 9.6, 270), "R29": (JX + 1.2, 9.6, 270), "R20": (JX + 3.45, 9.6, 270),
     "D1": (29.8, 11.6, 180), "R27": (24.2, 13.7, 180),
-    "U3": (35.43, 4.8, 270), "C12": (30.31, 3.0, 90), "C8": (28.05, 3.0, 90),
+    "U3": (35.43, 4.8, 270), "C12": (30.31, 3.0, 90), "C8": (28.05, 3.175, 90),
     "C10": (UX - 18.945, 6.6, 90), "C11": (UX - 16.445, 6.6, 90), "C7": (UX - 14.2, 6.4, 90),
     "C14": (UX - 16.6, 27.0, 90),
     # ---- MCU: ESP32-C5 at the top-right corner ----------------------------------------------------
     "U1": (UX, UY, 0),
-    "R18": (UX - 11.2, 9.4, 270), "SW1": (UX - 15.5, 13.2, 270), "C9": (UX - 15.5, 18.15, 180),
-    "SW2": (UX + 1.0, 29.8, 0), "R22": (UX + 7.3, 27.9, 180), "D4": (UX + 7.3, 30.2, 180),
+    "R18": (UX - 11.2, 9.205, 270), "SW1": (UX - 15.5, 13.2, 270), "C9": (UX - 15.5, 18.15, 180),
+    "SW2": (UX + 1.0, 29.8, 0), "R22": (UX + 7.3, 27.9, 180), "D4": (UX + 7.265, 30.2, 180),
     "J6": (HX, HY, 90), "R19": (HX + 4 * 2.54, HY + 3.9, 90),
     # ---- relay drivers below the header, one group over each relay's coil pins -------------------
     "D2": (K1_X - 0.8, HY + 7.06, 0), "Q1": (K1_X + 3.8, HY + 5.86, 270),
     "R23": (K1_X + 0.4, HY + 3.96, 0), "R25": (K1_X + 7.0, HY + 5.26, 90),
     "D3": (K2_X - 0.8, HY + 7.06, 0), "Q2": (K2_X + 3.8, HY + 5.86, 270),
-    "R24": (K2_X + 0.2, HY + 3.96, 0), "R26": (K2_X + 6.65, HY + 6.06, 90),
+    "R24": (K2_X + 0.2, HY + 3.96, 0), "R26": (K2_X + 6.65, HY + 6.0, 90),
     "C13": (K2_X - 5.2, HY + 5.26, 90),
 }
 # the case's four screws run from the back plate through these holes into the cover, so each screw is reachable from
@@ -585,10 +585,13 @@ def silkscreen(board):
     # mains input: in the gap between the CT terminal and F1
     text(board, "MAINS", FX1 - 5.9, H - 10.5, 0.9, rot=90, bold=True)
     text(board, "100-240V~", FX1 - 4.4, H - 10.5, 0.9, rot=90, bold=True)
-    # relays: relay 1 in the gap left of its contact copper, relay 2 between the relays
+    # relays: relay 1 in the gap left of its contact copper, relay 2 between the relays; each contact's name
+    # stands over its own copper strip beside the relay body (COM on the left, NO on the right)
     for name, x in (("RELAY 1", K1_X - 9.6), ("RELAY 2", (K1_X + K2_X) / 2 - 0.8)):
         text(board, name, x, H - 12.0, 0.9, rot=90, bold=True)
-        text(board, "COM NO", x + 1.45, H - 12.0, 0.8, rot=90, bold=True)
+    for kx in (K1_X, K2_X):
+        text(board, "COM", kx - 6.0, K_Y + 1.0, 0.8, rot=90, bold=True)
+        text(board, "NO", kx + 6.0, K_Y + 3.6, 0.8, rot=90, bold=True)
     # Qwiic pin names in the order of the pins: left to right on top, and left to right as read from the bottom
     qx = PLACE["J7"][0]
     i2c = {f"IO{design.GPIO['I2C_SDA']}": "SDA", f"IO{design.GPIO['I2C_SCL']}": "SCL"}
