@@ -55,6 +55,50 @@ def bend_radius(width_mm: float) -> float:
     return max(1.0, 2.5 * width_mm)
 
 
+def corner_radius(width_mm: float) -> float:
+    """Radius of the small arc at each 45-degree bend: 0.5 mm for signals, 1.5 x the width for wider tracks."""
+    return max(0.5, 1.5 * width_mm)
+
+
+def _chamfers(pts, width, fixed, max_d, radii):
+    """Cut every free right-angle corner of a polyline (points in nm) into two 45-degree bends. The 45-degree run
+    is the tangent at the middle of the arc the corner would have had (radius radii[i], or bend_radius), so the
+    track never comes further into the corner than that arc, and lanes planned with concentric radii stay evenly
+    spaced. -> (points, fixed, max_d, radii) with the new bend points added; every 45-degree bend gets
+    corner_radius."""
+    import math
+    n = len(pts)
+    seg = [math.dist(pts[i], pts[i + 1]) for i in range(n - 1)]
+    out_p, out_f, out_m, out_r = [pts[0]], [fixed[0]], [max_d[0]], [None]
+    small = corner_radius(width)
+    for i in range(1, n - 1):
+        p = pts[i]
+        u1 = ((pts[i - 1][0] - p[0]) / seg[i - 1], (pts[i - 1][1] - p[1]) / seg[i - 1])
+        u2 = ((pts[i + 1][0] - p[0]) / seg[i], (pts[i + 1][1] - p[1]) / seg[i])
+        turn = math.pi - math.acos(max(-1.0, min(1.0, u1[0] * u2[0] + u1[1] * u2[1])))
+        if not fixed[i] and abs(turn - math.pi / 2) < math.radians(1):
+            want = radii[i] if radii[i] is not None else bend_radius(width)
+            room1 = seg[i - 1] * (0.5 if i - 1 > 0 and not fixed[i - 1] else 0.9)
+            room2 = seg[i] * (0.5 if i + 1 < n - 1 and not fixed[i + 1] else 0.9)
+            d = min(MM(want) * (2 - math.sqrt(2)), room1, room2, max_d[i])
+            if d > MM(0.15):
+                for u in (u1, u2):
+                    out_p.append((p[0] + u[0] * d, p[1] + u[1] * d))
+                    out_f.append(False)
+                    out_m.append(max_d[i] - d)
+                    out_r.append(small)
+                continue
+        out_p.append(p)
+        out_f.append(fixed[i])
+        out_m.append(max_d[i])
+        out_r.append(small if abs(turn - math.pi / 4) < math.radians(1) else radii[i])
+    out_p.append(pts[-1])
+    out_f.append(fixed[-1])
+    out_m.append(max_d[-1])
+    out_r.append(None)
+    return out_p, out_f, out_m, out_r
+
+
 def _turn(u, v):
     """Angle in radians between two directions (0 = straight on)."""
     import math
@@ -191,6 +235,8 @@ def add_routes(board, routes):
                                  default=float("inf")))
                 r = path.get("radii")
                 radii.append(r[pts[src_i][2]] if r and src_i is not None and pts[src_i][2] < len(r) else None)
+            if len(xy) > 2:
+                xy, fixed, max_d, radii = _chamfers(xy, width, fixed, max_d, radii)
             plan = _fillets(xy, width, fixed, max_d, radii)
 
             def vec(p):

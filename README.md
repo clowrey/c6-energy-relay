@@ -163,10 +163,11 @@ low-voltage side.
 
 **Layers.** The board is routed by hand, with no sharp bend anywhere. The tracks are listed in
 [`hw/routes.py`](hw/routes.py) as waypoints, and every straight run is at 0°, 45° or 90°:
-[`hw/route.py`](hw/route.py) splits any other leg into a straight run and a 45° run, and rounds every bend into an
-arc (1 mm radius for signals, 2.5 × the width for power and mains). Tracks that run together (the bus from
-the module to the BL0939 and the Qwiic port, the fan-out to the GPIO header, the USB pair) turn on
-concentric arcs, so they stay evenly spaced round every corner. Corners where another branch joins stay
+[`hw/route.py`](hw/route.py) splits any other leg into a straight run and a 45° run, cuts every right-angle
+corner into two 45° bends, and rounds each bend with a small arc (0.5 mm radius for signals, 1.5 × the width
+for power and mains). Tracks that run together (the bus from the module to the BL0939 and the Qwiic port, the
+fan-out to the GPIO header, the USB pair) take longer 45° runs the further out they are, so they stay evenly
+spaced round every corner. Corners where another branch joins stay
 sharp, so the joint stays connected. Signal tracks are 0.2 mm, and ground is poured on both layers and
 stitched with vias. The LDO's tab (its 3.3 V output, and how it sheds heat) sits on a solid 3.3 V copper
 area of about 46 mm².

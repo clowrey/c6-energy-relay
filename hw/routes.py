@@ -2,8 +2,9 @@
 
 net -> list of paths {"layer": "F"|"B", "w": mm, "pts": [...], "vias": [...]}. Points are board coordinates (mm,
 origin top-left, y down, as gen_pcb.PLACE) or pad references ("U1", "13"); a pad number that occurs twice takes an
-index ("SW1", "1", 1). t() draws legs at 0, 45 and 90 degrees between the points, and route.py rounds every bend into
-an arc. Style: 0.2 mm signals, 0.3-0.6 mm power, 0.6 / 0.3 mm vias, ground poured on both layers, a solid 3V3
+index ("SW1", "1", 1). t() draws legs at 0, 45 and 90 degrees between the points; route.py cuts each right-angle corner
+into two 45-degree bends (radii: the arc the corner is cut to, so concentric radii keep lanes evenly spaced) and
+rounds every bend with a small arc. Style: 0.2 mm signals, 0.3-0.6 mm power, 0.6 / 0.3 mm vias, ground poured on both layers, a solid 3V3
 pour on the LDO tab, no tracks under the module. Mains nets stay on the top layer (ZP1 crosses L_F underneath), 1.0 mm
 (L / N) and 0.5 mm (divider); the relay contacts are copper zones.
 
@@ -204,7 +205,7 @@ b("USB_CDP", (JX - 0.75, UY5 + 2.4), (JX + 0.25, UY5 + 2.4))
 t("USB_CDP", ("J5", "B6"), (JX - 0.75, UY5 + 5.45), ("R28", "1"))
 t("USB_CDN", ("J5", "A7"), (JX - 0.25, UY5 + 5.4), (JX + 0.75, UY5 + 5.4), ("J5", "B7"))
 t("USB_CDN", (JX + 0.75, UY5 + 5.4), ("R29", "1"))
-CCY, RRY = UY5 + 5.3, at("R20")[1] - 0.825        # the CC lines' level, the resistors' upper pads
+CCY, RRY = UY5 + 5.5, at("R20")[1] - 0.825        # the CC lines' level, the resistors' upper pads
 t("CC1", ("J5", "A5"), (JX + 1.25, CCY), (at("R20")[0] - (RRY - CCY), CCY), ("R20", "1"))
 t("CC2", ("J5", "B5"), (JX - 1.75, CCY), (at("R21")[0] + (RRY - CCY), CCY), ("R21", "1"))
 t("GND", ("R21", "2"), (at("R21")[0], at("R21")[1] + 1.85), vias=[(at("R21")[0], at("R21")[1] + 1.85)])
