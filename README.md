@@ -121,14 +121,20 @@ the top edge.
 The plug headers stick out 3 mm past the bottom edge, flush with the outside of the case wall, and USB-C
 1.25 mm past the top edge, so plugs go in easily with the case on.
 
-The layout is three bands. Along the top: the Qwiic port, USB-C, the LDO and the ESP32-C5 module in the
-top-right corner. The board is cut away under the module's antenna (a 26.5 × 6.3 mm notch in the corner),
-so there is no board, copper or ground under or beside it, and the relays and the power module are as far
-from it as the board allows. In the middle: the BL0939 and its input filters in the left column, the
-HLK-PM01 beside them, and the GPIO header under the module with the EN and BOOT buttons and the status LED
-next to it. Along the bottom: the CT terminal and burdens, the ZMPT107-1, the fuses with the voltage
-divider between them, the varistor, and the two relays over their terminals. Every part has its
-reference next to it, and the buttons, the LED and every connector pin are named on the silkscreen.
+The layout is three bands. Along the top: the Qwiic port, USB-C (2.5 mm apart, so both plugs fit side by
+side), the LDO and the ESP32-C5 module in the top-right corner. The board is cut away under the module's
+antenna (a 26.5 × 6.3 mm notch in the corner), and the copper keep-out around it reaches 3.8 mm past the
+module's left side, so there is no board, copper or ground under or beside the antenna. The relays and the
+power module are as far from it as the board allows. In the middle: the BL0939 and its input filters in
+the left column, the HLK-PM01 beside them, and the GPIO header under the module with the EN and BOOT
+buttons and the status LED next to it. Along the bottom: the CT terminal and burdens, the ZMPT107-1, the
+fuses with the voltage divider between them, the varistor, and the two relays over their terminals. Every
+part has its reference next to it, and the buttons, the LED and every connector pin are named on the
+silkscreen.
+
+Small parts keep at least 0.3 mm between their courtyards (the IPC-7351 outline, which already adds
+0.25 mm around each part), so there is at least 0.8 mm between any two parts' bodies and pads:
+more than JLC's 0.3 mm assembly minimum, with room for a soldering iron.
 
 | Top | Bottom |
 |---|---|

@@ -106,8 +106,8 @@ for r in ("R8", "R9", "R10", "R11"):
     t("GND", (r, "2"), (at(r)[0], BY - 2.8), w=0.4, vias=[(at(r)[0], BY - 2.8)])
 
 # filtered lines: from each bead a staircase to the left edge, then up to its RC row (the first input outermost)
-for fb, net, lane, level, rr in (("FB1", "CT1P_B", 0.75, FBY - 1.9, "R12"), ("FB2", "CT1N_B", 1.2, FBY - 2.5, "R13"),
-                                 ("FB3", "CT2P_B", 1.65, FBY - 3.1, "R14"), ("FB4", "CT2N_B", 2.1, FBY - 3.7, "R15")):
+for fb, net, lane, level, rr in (("FB1", "CT1P_B", 0.7, FBY - 1.9, "R12"), ("FB2", "CT1N_B", 1.1, FBY - 2.5, "R13"),
+                                 ("FB3", "CT2P_B", 1.5, FBY - 3.1, "R14"), ("FB4", "CT2N_B", 1.9, FBY - 3.7, "R15")):
     t(net, (fb, "2"), (at(fb)[0], level), (lane, level), (lane, at(rr)[1]), (rr, "1"))
 
 # RC filters into the BL0939: S-curves from each capacitor to its pin
@@ -118,7 +118,7 @@ for r, c, pin, net, lv in (("R12", "C1", "3", "IP1", 8.0), ("R13", "C2", "4", "I
     cy = at(c)[1] + (0.775 if c in ("C1", "C3", "C5") else -0.775)
     t(net, (c, "1"), (lv, cy), (lv, u2pin(pin)[1]), ("U2", pin), radii=[None, 0.4, 0.4])
 CX = at("C1")[0]
-for y, cs in ((U2Y - 7.2, ("C1",)), (U2Y + 0.4, ("C2", "C3")), (U2Y + 5.8, ("C4", "C5"))):
+for y, cs in ((U2Y - 7.7, ("C1",)), (U2Y - 0.725, ("C2", "C3")), (U2Y + 6.175, ("C4", "C5"))):
     v("GND", (CX, y))
     for c in cs:
         t("GND", (c, "2"), (CX, y), w=0.3)
@@ -129,7 +129,7 @@ t("GND", ("U2", "8"), U8V, w=0.3, vias=[U8V])
 t("VS", ("T1", "3"), ("R6", "1"), w=0.3)
 R6V = (1.6, at("R6")[1] - 0.8)
 t("GND", ("R6", "2"), R6V, w=0.3, vias=[R6V])
-VSV = (at("R7")[0] - 0.825, U2Y + 5.9)
+VSV = (at("R7")[0] - 0.825, U2Y + 6.2)
 b("VS", ("T1", "3"), VSV, w=0.3, vias=[VSV])
 t("VS", VSV, ("R7", "1"), w=0.3)
 
@@ -167,9 +167,9 @@ for pin, net, k, target in (("4", "IO2", 1, "R30"), ("5", "IO3", 2, "R31")):
     t(net, ("U1", pin), (d, y0), (d, run), (br, run), (br, 16.4 + 0.3 * k), radii=[None, 1.0, RB0 + BP * k, 1.2 + BP * k])
     s(net, (br, 16.4 + 0.3 * k), (tx, 13.2), start=(0, -1), end=(0, -1))
     t(net, (tx, 13.2), (target, "2"))
-s("IO2", ("R30", "2"), (11.15, 8.4), ("J7", "3"), start=(0, -1), end=(0, -1))
-s("IO3", ("R31", "2"), (9.6, 8.4), ("J7", "4"), start=(0, -1), end=(0.2, -1))
-s("3V3", ("R30", "1"), (12.6, 8.4), ("J7", "2"), w=0.3, start=(0, -1), end=(-0.1, -1))
+s("IO2", ("R30", "2"), (10.5, 8.4), ("J7", "3"), start=(0, -1), end=(0, -1))
+s("IO3", ("R31", "2"), (9.0, 8.4), ("J7", "4"), start=(0, -1), end=(0, -1))
+s("3V3", ("R30", "1"), (11.8, 8.4), ("J7", "2"), w=0.3, start=(0, -1), end=(0, -1))
 SOUTH_X = 17.4                      # TX's turn down to the BL0939; RX turns 0.65 mm further west
 for pin, net, k, upad in (("6", "UART_RX", 3, "15"), ("7", "UART_TX", 4, "14")):
     x0, y0 = upin(pin)
@@ -180,11 +180,12 @@ for pin, net, k, upad in (("6", "UART_RX", 3, "15"), ("7", "UART_TX", 4, "14")):
       radii=[None, 1.0, RB0 + BP * k, 1.0 + BP * (4 - k), 0.5])
 t("UART_RX", ("R17", "2"), (SOUTH_X - BP, at("R17")[1]))
 
-# 3V3 for the Qwiic pull-ups and the BL0939: from the Qwiic's 3V3 pin under its body to the left of it, down the
-# left column
-s("3V3", ("J7", "2"), (12.1, 3.5), (8.0, 3.5), (6.9, 4.4), (6.9, 9.6), ("R31", "1"), w=0.3, start=(0, -1))
-s("3V3", ("R31", "1"), (6.4, 12.0), (6.4, U2Y - 9.5), (U3N[0] - 1.0, U3N[1]), U3N, w=0.3)
-t("GND", ("J7", "1"), (13.9, 7.3), w=0.3, vias=[(13.9, 7.3)])
+# 3V3 for the Qwiic pull-ups and the BL0939: from the Qwiic's 3V3 pin under its body to the left of it, down
+# between its pins and the corner screw, then down the left column
+s("3V3", ("J7", "2"), (10.1, 3.5), (8.2, 3.5), (7.4, 4.3), (7.4, 9.6), ("R31", "1"), w=0.3, start=(0, -1))
+s("3V3", ("R31", "1"), (7.4, 13.0), (6.4, 16.5), (6.4, U2Y - 9.5), (U3N[0] - 1.0, U3N[1]), U3N, w=0.3)
+J7V = (at("J7")[0] + 2.65, 3.7)
+t("GND", ("J7", "1"), J7V, w=0.3, vias=[J7V])
 
 # ======================================================================== USB-C & power ======
 UY5 = PLACE["J5"][1]
@@ -223,13 +224,15 @@ t("VBUS", VBV, ("D1", "2"), ("R27", "1"), w=0.4)
 t("GND", ("R27", "2"), (22.2, 14.6), w=0.3, vias=[(22.2, 14.6)])
 
 # +5V: LDO input with C12 / C8, D1's cathode, down to the HLK-PM01's +5V pin
-s("+5V", ("U3", "3"), (31.0, 3.6), ("C12", "1"), w=0.5)
+U3J = (at("U3")[0] - 3.6, 3.6)     # where the LDO's input meets C12 and the run down to D1
+s("+5V", ("U3", "3"), U3J, ("C12", "1"), w=0.5)
 t("+5V", ("C12", "1"), ("C8", "1"), w=0.5)
-t("+5V", (31.0, 3.6), (31.0, 6.0), ("D1", "1"), w=0.5)
+t("+5V", U3J, (U3J[0], 6.0), ("D1", "1"), w=0.5)
 s("+5V", ("D1", "1"), (32.6, 14.6), ("PS1", "4"), w=0.6, end=(0.15, 1))
 for c in ("C12", "C8"):
     t("GND", (c, "2"), (at(c)[0], 0.95), w=0.3, vias=[(at(c)[0], 0.95)])
-t("GND", ("U3", "1"), (38.4, 1.65), w=0.4, vias=[(38.4, 1.65)])
+U3V = (at("U3")[0] + 3.8, 1.65)
+t("GND", ("U3", "1"), U3V, w=0.4, vias=[U3V])
 
 # 3V3 out of the LDO: the pour covers the tab and the decoupling capacitors; the module's 3V3 pin joins it
 t("3V3", ("U1", "2"), ("R18", "1"), (UX - 12.4, upin(2)[1]), w=0.5)
