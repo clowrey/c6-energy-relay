@@ -60,7 +60,10 @@ def corner_radius(width_mm: float) -> float:
     return max(0.5, 1.5 * width_mm)
 
 
-def _chamfers(pts, width, fixed, max_d, radii):
+CUT = 0.0   # default extra length (mm) of a corner's 45-degree run beyond its planned arc's tangent (cuts[i])
+
+
+def _chamfers(pts, width, fixed, max_d, radii, cuts=None):
     """Cut every free right-angle corner of a polyline (points in nm) into two 45-degree bends. The 45-degree run
     is the tangent at the middle of the arc the corner would have had (radius radii[i], or bend_radius), so the
     track never comes further into the corner than that arc, and lanes planned with concentric radii stay evenly
@@ -80,7 +83,8 @@ def _chamfers(pts, width, fixed, max_d, radii):
             want = radii[i] if radii[i] is not None else bend_radius(width)
             room1 = seg[i - 1] * (0.5 if i - 1 > 0 and not fixed[i - 1] else 0.9)
             room2 = seg[i] * (0.5 if i + 1 < n - 1 and not fixed[i + 1] else 0.9)
-            d = min(MM(want) * (2 - math.sqrt(2)), room1, room2, max_d[i])
+            cut = cuts[i] if cuts and cuts[i] is not None else CUT
+            d = min(MM(want) * (2 - math.sqrt(2)) + MM(cut), room1, room2, max_d[i])
             if d > MM(0.15):
                 for u in (u1, u2):
                     out_p.append((p[0] + u[0] * d, p[1] + u[1] * d))
@@ -96,7 +100,19 @@ def _chamfers(pts, width, fixed, max_d, radii):
     out_f.append(fixed[-1])
     out_m.append(max_d[-1])
     out_r.append(None)
-    return out_p, out_f, out_m, out_r
+    # two corners that shared a leg can meet in the middle of it: keep one point there
+    keep = [0]
+    for j in range(1, len(out_p)):
+        if math.dist(out_p[j], out_p[keep[-1]]) < MM(0.01):
+            k = keep[-1]
+            out_f[k] = out_f[k] or out_f[j]
+            out_m[k] = min(out_m[k], out_m[j])
+            if j == len(out_p) - 1:
+                out_p[k] = out_p[j]
+            continue
+        keep.append(j)
+    return ([out_p[j] for j in keep], [out_f[j] for j in keep], [out_m[j] for j in keep],
+            [out_r[j] for j in keep])
 
 
 def _turn(u, v):
@@ -175,6 +191,8 @@ def _fillets(pts, width, fixed, max_d=None, radii=None):
         want = radii[i] if radii and i < len(radii) and radii[i] is not None else bend_radius(width)
         r = min(MM(want), room / tan_half_turn)
         d = r * tan_half_turn
+        if d < MM(0.01):                              # no room for an arc
+            continue
         t1 = (p[0] + u1[0] * d, p[1] + u1[1] * d)
         t2 = (p[0] + u2[0] * d, p[1] + u2[1] * d)
         bis = (u1[0] + u2[0], u1[1] + u2[1])
@@ -236,7 +254,11 @@ def add_routes(board, routes):
                 r = path.get("radii")
                 radii.append(r[pts[src_i][2]] if r and src_i is not None and pts[src_i][2] < len(r) else None)
             if len(xy) > 2:
-                xy, fixed, max_d, radii = _chamfers(xy, width, fixed, max_d, radii)
+                cuts = path.get("cuts")
+                if cuts:
+                    cuts = [cuts[pts[src_i][2]] if src_i is not None and pts[src_i][2] < len(cuts) else None
+                            for _, src_i in oct_pts]
+                xy, fixed, max_d, radii = _chamfers(xy, width, fixed, max_d, radii, cuts)
             plan = _fillets(xy, width, fixed, max_d, radii)
 
             def vec(p):

@@ -3,15 +3,16 @@
 net -> list of paths {"layer": "F"|"B", "w": mm, "pts": [...], "vias": [...]}. Points are board coordinates (mm,
 origin top-left, y down, as gen_pcb.PLACE) or pad references ("U1", "13"); a pad number that occurs twice takes an
 index ("SW1", "1", 1). t() draws legs at 0, 45 and 90 degrees between the points; route.py cuts each right-angle corner
-into two 45-degree bends (radii: the arc the corner is cut to, so concentric radii keep lanes evenly spaced) and
-rounds every bend with a small arc. Style: 0.2 mm signals, 0.3-0.6 mm power, 0.6 / 0.3 mm vias, ground poured on both layers, a solid 3V3
+into two 45-degree bends (radii: the arc the corner is cut to, so concentric radii keep lanes evenly spaced; cuts: how
+much longer the 45-degree run is) and rounds every bend with a small arc. Style: 0.2 mm signals, 0.3-0.6 mm power, 0.6 / 0.3 mm vias, ground poured on both layers, a solid 3V3
 pour on the LDO tab, no tracks under the module. Mains nets stay on the top layer (ZP1 crosses L_F underneath), 1.0 mm
 (L / N) and 0.5 mm (divider); the relay contacts are copper zones.
 
 The module's signals leave it in three groups: its left side feeds a five-lane bus (3V3, I2C, UART) that dives under
-the EN button and runs under the HLK-PM01 to the Qwiic port and the BL0939; four GPIOs and relay 1's drive drop beside
-it to the header and the driver below; the USB pair takes one hop on the bottom layer up to the USB-C socket. Its right
-side fans down to the BOOT button, the LED and eight header pins; relay 2's drive runs down the right edge underneath.
+the EN button and runs under the HLK-PM01 to the Qwiic port, the UART pair crossing 45 degrees down to the BL0939;
+four GPIOs and relay 1's drive drop beside it, the GPIOs crossing 45 degrees to the header; the USB pair takes one hop
+on the bottom layer up to the USB-C socket. Its right side feeds the BOOT button, the LED and eight GPIOs that cross
+45 degrees down-left to the header; relay 2's drive runs down the right edge underneath.
 """
 from __future__ import annotations
 
@@ -20,16 +21,17 @@ from hw.gen_pcb import HOLES, HX, HY, JX, PLACE, PX, U2X, U2Y, UX, UY, W  # noqa
 ROUTES: dict = {}
 
 
-def t(net, *pts, w=0.2, layer="F", vias=(), radii=None, start=None, end=None):
+def t(net, *pts, w=0.2, layer="F", vias=(), radii=None, start=None, end=None, cuts=None):
     """Legs between the points at 0, 45 or 90 degrees (route.py splits any other leg into a straight and a 45-degree
     run), every bend rounded (radii: the radius at each point, None = default). start / end: the direction to leave
     the first point and to arrive at the last one, which picks the order of those two runs."""
     ROUTES.setdefault(net, []).append({"layer": layer, "w": w, "pts": list(pts), "vias": list(vias),
-                                       "radii": list(radii) if radii else None, "start": start, "end": end})
+                                       "radii": list(radii) if radii else None, "start": start, "end": end,
+                                       "cuts": list(cuts) if cuts else None})
 
 
-def b(net, *pts, w=0.2, vias=()):
-    t(net, *pts, w=w, layer="B", vias=vias)
+def b(net, *pts, w=0.2, vias=(), radii=None, cuts=None):
+    t(net, *pts, w=w, layer="B", vias=vias, radii=radii, cuts=cuts)
 
 
 def v(net, *pts):
@@ -161,31 +163,39 @@ t("GND", ("C6", "2"), C6V, w=0.3, vias=[C6V])
 # The lanes keep 0.65 mm apart; every corner they share is concentric
 BP = 0.65
 BUS_Y = 19.6                        # 3V3's run under the HLK-PM01; the others below it
-DX0 = 35.8                          # 3V3's descent beside the HLK-PM01; the others east of it
+DX0 = 37.0                          # 3V3's descent beside the HLK-PM01; the others east of it
+# the bus's corners are cut long at 45 degrees: CA where the lanes turn down (west of the EN button's pads), CB where
+# they turn into the run (as long as the HLK-PM01's +5V pin allows)
+CA, CB = 1.0, 1.3
+SQ2 = 2 ** 0.5
 RB0 = 1.0                           # inner radius at the corner into the run
 QC = at("R30")[0] + 0.825            # 3V3's column up the left: straight into R30's 3V3 pin
-t("3V3", (DX0, 9.2), (DX0, BUS_Y), (QC, BUS_Y), ("R30", "1"), w=0.4, radii=[None, RB0, 1.2])
+t("3V3", (DX0, 9.2), (DX0, BUS_Y), (QC, BUS_Y), ("R30", "1"), w=0.4, radii=[None, RB0, 1.2], cuts=[None, CB])
 for pin, net, k, target in (("4", "IO2", 1, "R30"), ("5", "IO3", 2, "R31")):
     x0, y0 = upin(pin)
     d, run, br = DX0 + BP * k, BUS_Y + BP * k, QC - BP * k
     tx = at(target)[0] + (-0.825 if target == "R30" else 0.825)
     t(net, ("U1", pin), (d, y0), (d, run), (br, run), (br, 16.4 + 0.3 * k), (tx, 13.2), (target, "2"),
-      radii=[None, 1.0, RB0 + BP * k, 1.2 + BP * k])
+      radii=[None, 1.0, RB0 + BP * k, 1.2 + BP * k], cuts=[None, CA, CB])
 # the Qwiic lines leave the pull-ups' row together at QY, run 45 degrees over to their pins and up into them
 QY = 10.2
 for net, r, pad, jp, w in (("IO2", "R30", -0.825, "3", 0.2), ("IO3", "R31", 0.825, "4", 0.2),
                            ("3V3", "R30", 0.825, "2", 0.3)):
     fx, px = at(r)[0] + pad, at("J7")[0] + {"2": 0.5, "3": -0.5, "4": -1.5}[jp]
     t(net, (r, "1" if net == "3V3" else "2"), (fx, QY), (px, QY - (fx - px)), ("J7", jp), w=w)
-SOUTH_X = 17.4                      # TX's turn down to the BL0939; RX turns 0.65 mm further west
+# the UART pair leaves the run 45 degrees down to the BL0939, side by side, each ending level with its pin; RX's
+# pull-up R17 joins it level with the resistor
+UEND = u2pin(14)[0] + 1.625         # where TX's 45-degree run ends, beside its pin
 for pin, net, k, upad in (("6", "UART_RX", 3, "15"), ("7", "UART_TX", 4, "14")):
     x0, y0 = upin(pin)
     d, run = DX0 + BP * k, BUS_Y + BP * k
-    south = SOUTH_X - BP * (4 - k)
     px, py = u2pin(upad)
-    t(net, ("U1", pin), (d, y0), (d, run), (south, run), (south, py), ("U2", upad),
-      radii=[None, 1.0, RB0 + BP * k, 1.0 + BP * (4 - k), 0.5])
-t("UART_RX", ("R17", "2"), (SOUTH_X - BP, at("R17")[1]))
+    c = UEND + u2pin(14)[1] - BP * SQ2 * (4 - k)       # x + y along this lane's 45-degree run
+    tap = [(c - at("R17")[1], at("R17")[1])] if net == "UART_RX" else []
+    t(net, ("U1", pin), (d, y0), (d, run), (c - run, run), *tap, (c - py, py), ("U2", upad),
+      radii=[None, 1.0, RB0 + BP * k], cuts=[None, CA, CB])
+    if tap:
+        t("UART_RX", ("R17", "2"), tap[0])
 
 # 3V3 for the Qwiic pull-ups and the BL0939: from the Qwiic's 3V3 pin under its body to the left of it, down
 # between its pins and the corner screw, then down the left column
@@ -293,24 +303,25 @@ t("3V3", ("R19", "1"), R19V, w=0.3)
 t("IO27", hpin(9), ("R19", "2"))
 
 # ======================================================================== module, left side ===
-# relay 1's drive (outermost) and four GPIOs drop beside the module; the GPIOs turn in together (concentric corners)
-# under it to the header
+# relay 1's drive (outermost) and four GPIOs leave their pins 45 degrees down into columns beside the module, then
+# cross 45 degrees down-right to the header together (0.5 mm apart), each ending straight above its pin
 LP = 0.5
 K1L = UX - 12.6
-t("RLY1_DRV", ("U1", "8"), (K1L, upin(8)[1]), (K1L, HY + 1.5), ("R23", "1"), radii=[None, 1.0, 1.5])
-L1 = HY - 5.34                      # pin 12's level (innermost); the others 0.5 mm lower each
+LXS = upin(8)[0] - 1.0              # where the left pins' 45-degree exits start
+t("RLY1_DRV", ("U1", "8"), (LXS, upin(8)[1]), (K1L, upin(8)[1] + LXS - K1L), (K1L, HY + 1.5), ("R23", "1"))
+FAN_END = HY - 2.54 - 1.0           # the innermost lanes reach their header column here, 1 mm above the pin row
 for i, (pin, hp, odd) in enumerate((("12", 8, False), ("11", 7, True), ("10", 6, False), ("9", 5, True))):
     lx = K1L + LP * (4 - i)
-    level = L1 + LP * i
     px, py = upin(pin)
     hx, hy = hpin(hp)
     drop = hx - 1.27 if odd else hx
     net = f"IO{6 + int(pin) - 8}"
-    pts = [("U1", pin), (lx, py), (lx, level), (drop, level)]
+    c = hpin(8)[0] - FAN_END - LP * SQ2 * i            # x - y along this lane's 45-degree run
+    pts = [("U1", pin), (LXS, py), (lx, py + LXS - lx), (lx, lx - c), (drop, drop - c)]
     if odd:
-        t(net, *pts, (drop, hy - 1.27), ("J6", str(hp)), radii=[None, 1.0, 1.0 + LP * i, 0.6, 0.5])
+        t(net, *pts, (drop, hy - 1.27), ("J6", str(hp)))
     else:
-        t(net, *pts, ("J6", str(hp)), radii=[None, 1.0, 1.0 + LP * i, 0.6])
+        t(net, *pts, ("J6", str(hp)))
 
 # ======================================================================== module, right side ===
 rx = upin(15)[0]
@@ -319,28 +330,28 @@ t("BOOT", ("U1", "15"), (rx + 1.0, upin(15)[1]), (rx + 1.0, 26.4), (at("SW2")[0]
 t("BOOT", ("SW2", "1", 0), ("SW2", "1", 1))
 t("LED", ("U1", "16"), (rx + 1.6, upin(16)[1]), (rx + 1.6, at("R22")[1]), ("R22", "1"), radii=[None, 0.6, 0.6])
 t("LED_A", ("R22", "2"), ("D4", "2"))
-D4V = (at("D4")[0] + 1.9, at("D4")[1])
+D4V = (at("D4")[0] + 0.755, at("D4")[1] - 1.15)    # above its pad: the GPIO lanes cross below it
 t("GND", ("D4", "1"), D4V, vias=[D4V])
 SWV = (at("SW2")[0] - 4.2, at("SW2")[1] + 1.875)
 t("GND", ("SW2", "2", 0), SWV, vias=[SWV])
-# eight GPIOs to the header: the lanes run down the right side, then turn in together (concentric corners) and step
-# down to their pins
+# eight GPIOs to the header: the lanes leave their pins 45 degrees down into columns on the right, then cross 45
+# degrees down-left to the header together (0.5 mm apart), each ending straight above its pin
 RP = 0.5
 RIGHT = (("17", "IO4", 10), ("18", "IO27", 9), ("19", "IO15", 12), ("21", "IO23", 11), ("23", "IO24", 14),
          ("25", "IO11", 13), ("26", "IO25", 16), ("27", "IO26", 15))
-R0 = HY - 9.24                      # IO4's level (innermost); the others 0.5 mm lower each
+RXS = rx + 1.0                      # where the right pins' 45-degree exits start
 for i, (pin, net, hp) in enumerate(RIGHT):
     lx = rx + 2.6 + RP * i
-    level = R0 + RP * i
     px, py = upin(pin)
     hx, hy = hpin(hp)
     odd = hp % 2 == 1
     drop = hx + 1.27 if odd else hx
-    pts = [("U1", pin), (lx, py), (lx, level), (drop, level)]
+    c = hpin(10)[0] + FAN_END + RP * SQ2 * i           # x + y along this lane's 45-degree run
+    pts = [("U1", pin), (RXS, py), (lx, py + lx - RXS), (lx, c - lx), (drop, c - drop)]
     if odd:
-        t(net, *pts, (drop, hy - 1.27), ("J6", str(hp)), radii=[None, 1.0, 1.0 + RP * i, 0.6, 0.5])
+        t(net, *pts, (drop, hy - 1.27), ("J6", str(hp)))
     else:
-        t(net, *pts, ("J6", str(hp)), radii=[None, 1.0, 1.0 + RP * i, 0.6])
+        t(net, *pts, ("J6", str(hp)))
 # relay 2's drive: a via beside pad 24, down the right edge underneath, around the screw, up beside its base resistor
 K2V = (rx + 1.25, upin(24)[1])
 K2V2 = (at("R24")[0] - 0.825, at("R24")[1] - 0.9)
